@@ -45,7 +45,7 @@ const ServiceNowProvider = {
         basicAuth: basicAuth,
         username: credentials.username,
       }
-    } catch (error) {
+    } catch {
       return null
     }
   },
@@ -54,13 +54,13 @@ const ServiceNowProvider = {
 export const authOptions = {
   providers: [ServiceNowProvider],
   logger: {
-    error: (code: string, metadata: any) => {
+    error: (_code: string, _metadata: any) => {
       // Log errors in production
     },
-    warn: (code: string) => {
+    warn: (_code: string) => {
       // Log warnings in production
     },
-    debug: (code: string, metadata: any) => {
+    debug: (_code: string, _metadata: any) => {
       // Debug logging disabled
     }
   },
@@ -93,7 +93,7 @@ export const authOptions = {
       session.error = token.error
       return session
     },
-    async signIn({ user, account, profile }: { user: any; account: any; profile?: any }) {
+    async signIn() {
       return true
     },
   },
