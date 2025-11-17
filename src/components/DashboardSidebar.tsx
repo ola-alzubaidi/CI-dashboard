@@ -189,14 +189,11 @@ export function DashboardSidebar({ onDashboardChange }: DashboardSidebarProps) {
 
           {/* Footer - Settings hint */}
           <div className="p-4 border-t border-slate-700/50 bg-slate-800/30">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs text-slate-400">
-                <div className="p-1.5 bg-slate-700/50 rounded-md">
-                  <Settings className="h-3 w-3" />
-                </div>
-                <span className="font-medium">{dashboards.length} dashboard{dashboards.length !== 1 ? 's' : ''}</span>
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <div className="p-1.5 bg-slate-700/50 rounded-md">
+                <Settings className="h-3 w-3" />
               </div>
-              <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse"></div>
+              <span className="font-medium">{dashboards.length} dashboard{dashboards.length !== 1 ? 's' : ''}</span>
             </div>
           </div>
         </>
