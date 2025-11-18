@@ -1,5 +1,3 @@
-import { Widget } from './widget'
-
 export interface DashboardConfig {
   id: string
   name: string
@@ -7,7 +5,6 @@ export interface DashboardConfig {
   type: 'ritms' | 'incidents' | 'users' | 'custom'
   createdAt: string
   updatedAt: string
-  widgets?: Widget[]  // Array of widgets on this dashboard
   settings: {
     limit?: number
     filters?: Record<string, string>
