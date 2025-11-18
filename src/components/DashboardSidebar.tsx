@@ -18,6 +18,7 @@ import {
   DEFAULT_DASHBOARD
 } from '@/lib/dashboardStorage'
 import { DashboardConfig } from '@/types/dashboard'
+import { DashboardCreateModal } from '@/components/DashboardCreateModal'
 import { DashboardConfigModal } from '@/components/DashboardConfigModal'
 
 interface DashboardSidebarProps {
@@ -28,7 +29,8 @@ export function DashboardSidebar({ onDashboardChange }: DashboardSidebarProps) {
   const [dashboards, setDashboards] = useState<DashboardConfig[]>([])
   const [activeDashboardId, setActiveDashboardIdState] = useState<string | null>(null)
   const [isCollapsed, setIsCollapsed] = useState(false)
-  const [showModal, setShowModal] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showConfigModal, setShowConfigModal] = useState(false)
   const [editingDashboard, setEditingDashboard] = useState<DashboardConfig | null>(null)
 
   useEffect(() => {
@@ -41,7 +43,14 @@ export function DashboardSidebar({ onDashboardChange }: DashboardSidebarProps) {
     setActiveDashboardIdState(store.activeDashboardId)
   }
 
-  const handleModalSuccess = (dashboard: DashboardConfig) => {
+  const handleCreateSuccess = (dashboard: DashboardConfig) => {
+    loadDashboards()
+    if (onDashboardChange) {
+      onDashboardChange(dashboard)
+    }
+  }
+
+  const handleConfigSuccess = (dashboard: DashboardConfig) => {
     loadDashboards()
     if (onDashboardChange) {
       onDashboardChange(dashboard)
@@ -71,12 +80,17 @@ export function DashboardSidebar({ onDashboardChange }: DashboardSidebarProps) {
 
   const handleOpenCreateModal = () => {
     setEditingDashboard(null)
-    setShowModal(true)
+    setShowCreateModal(true)
   }
 
   const handleOpenEditModal = (dashboard: DashboardConfig) => {
     setEditingDashboard(dashboard)
-    setShowModal(true)
+    setShowCreateModal(true)
+  }
+
+  const handleOpenConfigModal = (dashboard: DashboardConfig) => {
+    setEditingDashboard(dashboard)
+    setShowConfigModal(true)
   }
 
   return (
@@ -163,9 +177,22 @@ export function DashboardSidebar({ onDashboardChange }: DashboardSidebarProps) {
                         variant="ghost"
                         onClick={(e) => {
                           e.stopPropagation()
+                          handleOpenConfigModal(dashboard)
+                        }}
+                        className="h-7 w-7 p-0 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 hover:text-blue-300 rounded-lg"
+                        title="Configure Settings"
+                      >
+                        <Settings className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation()
                           handleOpenEditModal(dashboard)
                         }}
                         className="h-7 w-7 p-0 bg-slate-700/80 hover:bg-slate-600 text-slate-300 hover:text-white rounded-lg"
+                        title="Edit Name"
                       >
                         <Edit className="h-3.5 w-3.5" />
                       </Button>
@@ -177,8 +204,27 @@ export function DashboardSidebar({ onDashboardChange }: DashboardSidebarProps) {
                           handleDeleteDashboard(dashboard.id)
                         }}
                         className="h-7 w-7 p-0 bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 rounded-lg"
+                        title="Delete"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Settings button for active dashboard */}
+                  {activeDashboardId === dashboard.id && dashboard.id !== DEFAULT_DASHBOARD.id && (
+                    <div className="absolute top-2 right-2 flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleOpenConfigModal(dashboard)
+                        }}
+                        className="h-7 w-7 p-0 bg-white/20 hover:bg-white/30 text-white rounded-lg"
+                        title="Configure Settings"
+                      >
+                        <Settings className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   )}
@@ -223,11 +269,19 @@ export function DashboardSidebar({ onDashboardChange }: DashboardSidebarProps) {
         </div>
       )}
 
-      {/* Dashboard Create/Edit Modal */}
+      {/* Dashboard Create/Edit Name Modal */}
+      <DashboardCreateModal
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+        onSuccess={handleCreateSuccess}
+        editDashboard={editingDashboard}
+      />
+      
+      {/* Dashboard Configuration Modal */}
       <DashboardConfigModal
-        open={showModal}
-        onOpenChange={setShowModal}
-        onSuccess={handleModalSuccess}
+        open={showConfigModal}
+        onOpenChange={setShowConfigModal}
+        onSuccess={handleConfigSuccess}
         editDashboard={editingDashboard}
       />
     </div>
