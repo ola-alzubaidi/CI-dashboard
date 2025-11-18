@@ -8,11 +8,15 @@ import { RequestItemTable } from "@/components/RequestItemTable"
 import { ServiceNowRecord } from "@/lib/servicenow"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { RefreshCw, LogOut, LayoutDashboard, LayoutGrid, Table2 } from "lucide-react"
+import { RefreshCw, LogOut, LayoutDashboard, LayoutGrid, Table2, Plus } from "lucide-react"
 import { DashboardSidebar } from "@/components/DashboardSidebar"
 import { DashboardBuilder } from "@/components/DashboardBuilder"
 import { getActiveDashboard } from "@/lib/dashboardStorage"
 import { DashboardConfig } from "@/types/dashboard"
+import { Widget } from "@/types/widget"
+import { ChartWidget } from "@/components/widgets/ChartWidget"
+import { WidgetConfigModal } from "@/components/WidgetConfigModal"
+import { addWidgetToDashboard, updateWidgetInDashboard, deleteWidgetFromDashboard } from "@/lib/widgetStorage"
 
 export default function RITMsPage() {
   const { data: session, status } = useSession()
@@ -23,6 +27,9 @@ export default function RITMsPage() {
   const [mounted, setMounted] = useState(false)
   const [activeDashboard, setActiveDashboard] = useState<DashboardConfig | null>(null)
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
+  const [showWidgetModal, setShowWidgetModal] = useState(false)
+  const [editingWidget, setEditingWidget] = useState<Widget | null>(null)
+  const [widgets, setWidgets] = useState<Widget[]>([])
 
   const fetchRITMs = useCallback(async (limit?: number) => {
     setLoading(true)
@@ -45,9 +52,51 @@ export default function RITMsPage() {
 
   const handleDashboardChange = (dashboard: DashboardConfig) => {
     setActiveDashboard(dashboard)
+    setWidgets(dashboard.widgets || [])
     // Fetch data based on the new dashboard's settings
     if (dashboard.type === 'ritms') {
       fetchRITMs(dashboard.settings.limit)
+    }
+  }
+
+  const handleAddWidget = () => {
+    setEditingWidget(null)
+    setShowWidgetModal(true)
+  }
+
+  const handleConfigureWidget = (widget: Widget) => {
+    setEditingWidget(widget)
+    setShowWidgetModal(true)
+  }
+
+  const handleDeleteWidget = (widgetId: string) => {
+    if (!activeDashboard) return
+    if (window.confirm('Delete this widget?')) {
+      deleteWidgetFromDashboard(activeDashboard.id, widgetId)
+      const updatedDashboard = getActiveDashboard()
+      if (updatedDashboard) {
+        setActiveDashboard(updatedDashboard)
+        setWidgets(updatedDashboard.widgets || [])
+      }
+    }
+  }
+
+  const handleSaveWidget = (widgetData: Partial<Widget>) => {
+    if (!activeDashboard) return
+
+    if (editingWidget) {
+      // Update existing widget
+      updateWidgetInDashboard(activeDashboard.id, editingWidget.id, widgetData)
+    } else {
+      // Add new widget
+      addWidgetToDashboard(activeDashboard.id, widgetData)
+    }
+
+    // Reload dashboard
+    const updatedDashboard = getActiveDashboard()
+    if (updatedDashboard) {
+      setActiveDashboard(updatedDashboard)
+      setWidgets(updatedDashboard.widgets || [])
     }
   }
 
@@ -146,9 +195,47 @@ export default function RITMsPage() {
               </Alert>
             )}
 
-            {/* Show Dashboard Builder for Custom Dashboards */}
+            {/* Show Widgets for Custom Dashboards */}
             {activeDashboard?.type === 'custom' ? (
-              <DashboardBuilder dashboard={activeDashboard} />
+              <div className="space-y-6">
+                {/* Add Widget Button */}
+                <div className="flex justify-between items-center">
+                  <h2 className="text-lg font-semibold">Widgets</h2>
+                  <Button
+                    onClick={handleAddWidget}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Widget
+                  </Button>
+                </div>
+
+                {/* Widget Grid */}
+                {widgets.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {widgets.map((widget) => (
+                      <ChartWidget
+                        key={widget.id}
+                        widget={widget}
+                        onConfigure={handleConfigureWidget}
+                        onDelete={handleDeleteWidget}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-slate-200 rounded-lg p-12 text-center">
+                    <LayoutDashboard className="h-12 w-12 mx-auto text-slate-300 mb-4" />
+                    <h3 className="text-lg font-semibold text-slate-600 mb-2">No widgets yet</h3>
+                    <p className="text-slate-500 mb-4">
+                      Add your first widget to visualize your ServiceNow data
+                    </p>
+                    <Button onClick={handleAddWidget} className="bg-blue-600 hover:bg-blue-700">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your First Widget
+                    </Button>
+                  </div>
+                )}
+              </div>
             ) : (
               <>
                 {/* View Mode Toggle */}
@@ -222,6 +309,14 @@ export default function RITMsPage() {
           </div>
         </div>
       </div>
+
+      {/* Widget Configuration Modal */}
+      <WidgetConfigModal
+        open={showWidgetModal}
+        onOpenChange={setShowWidgetModal}
+        onSave={handleSaveWidget}
+        widget={editingWidget}
+      />
     </div>
   )
 }
