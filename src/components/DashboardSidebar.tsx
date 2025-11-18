@@ -18,7 +18,7 @@ import {
   DEFAULT_DASHBOARD
 } from '@/lib/dashboardStorage'
 import { DashboardConfig } from '@/types/dashboard'
-import { DashboardCreateModal } from '@/components/DashboardCreateModal'
+import { DashboardConfigModal } from '@/components/DashboardConfigModal'
 
 interface DashboardSidebarProps {
   onDashboardChange?: (dashboard: DashboardConfig) => void
@@ -224,7 +224,7 @@ export function DashboardSidebar({ onDashboardChange }: DashboardSidebarProps) {
       )}
 
       {/* Dashboard Create/Edit Modal */}
-      <DashboardCreateModal
+      <DashboardConfigModal
         open={showModal}
         onOpenChange={setShowModal}
         onSuccess={handleModalSuccess}
