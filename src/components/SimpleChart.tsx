@@ -103,25 +103,33 @@ export function SimpleChart({ config, onConfigure, onDelete }: SimpleChartProps)
             <RefreshCw className="h-8 w-8 animate-spin text-blue-500" />
           </div>
         ) : data.length > 0 ? (
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={data}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="space-y-4">
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={data}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name }) => name}
+                >
+                  {data.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="text-center pt-2 border-t">
+              <p className="text-sm text-slate-600">
+                Total RITMs: <span className="font-semibold text-slate-900">{data.reduce((sum, item) => sum + item.value, 0)}</span>
+              </p>
+            </div>
+          </div>
         ) : (
           <div className="flex items-center justify-center h-[300px] text-slate-500">
             No data available
