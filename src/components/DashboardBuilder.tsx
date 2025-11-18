@@ -224,10 +224,10 @@ export function DashboardBuilder({ dashboard }: DashboardBuilderProps) {
             <Sparkles className="h-5 w-5 text-blue-600 mt-0.5" />
             <div className="flex-1">
               <h4 className="text-sm font-semibold text-blue-900 mb-1">
-                Customize Your Widgets
+                Custom Dashboard
               </h4>
               <p className="text-xs text-blue-700">
-                Click the settings button on each widget to configure data sources, filters, refresh rates, and display options. Drag and drop to rearrange (coming soon).
+                This is a custom dashboard. You can configure its settings from the sidebar.
               </p>
             </div>
           </div>
