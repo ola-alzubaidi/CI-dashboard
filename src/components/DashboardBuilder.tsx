@@ -1,89 +1,130 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Plus, LayoutDashboard } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { 
+  Plus, 
+  Table2, 
+  BarChart3, 
+  ListChecks,
+  Users,
+  AlertCircle,
+  Settings,
+  Trash2,
+  LayoutDashboard
+} from 'lucide-react'
 import { DashboardConfig } from '@/types/dashboard'
 import { SimpleChart } from './SimpleChart'
 import { ChartConfigModal } from './ChartConfigModal'
 
-interface ChartConfig {
+interface Widget {
   id: string
+  type: 'ritms' | 'incidents' | 'users' | 'chart' | 'stats'
   title: string
-  groupBy: 'state' | 'priority' | 'assigned_to'
+  size: 'small' | 'medium' | 'large'
+  chartConfig?: {
+    title: string
+    groupBy: 'state' | 'priority' | 'assigned_to'
+  }
 }
 
 interface DashboardBuilderProps {
   dashboard: DashboardConfig
 }
 
-const getStorageKey = (dashboardId: string) => `dashboard-charts-${dashboardId}`
-
 export function DashboardBuilder({ dashboard }: DashboardBuilderProps) {
-  const [charts, setCharts] = useState<ChartConfig[]>([])
-  const [showConfigModal, setShowConfigModal] = useState(false)
-  const [editingChart, setEditingChart] = useState<ChartConfig | null>(null)
+  const [widgets, setWidgets] = useState<Widget[]>([])
+  const [showWidgetMenu, setShowWidgetMenu] = useState(false)
+  const [showChartConfig, setShowChartConfig] = useState(false)
+  const [editingWidgetId, setEditingWidgetId] = useState<string | null>(null)
 
-  // Load charts from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem(getStorageKey(dashboard.id))
-    if (stored) {
-      try {
-        setCharts(JSON.parse(stored))
-      } catch (e) {
-        console.error('Error loading charts:', e)
-      }
+  const addWidget = (type: Widget['type'], title: string) => {
+    const newWidget: Widget = {
+      id: `widget-${Date.now()}`,
+      type,
+      title,
+      size: 'medium'
     }
-  }, [dashboard.id])
-
-  // Save charts to localStorage
-  const saveCharts = (newCharts: ChartConfig[]) => {
-    setCharts(newCharts)
-    localStorage.setItem(getStorageKey(dashboard.id), JSON.stringify(newCharts))
+    setWidgets([...widgets, newWidget])
+    setShowWidgetMenu(false)
   }
 
-  const handleAddChart = () => {
-    setEditingChart(null)
-    setShowConfigModal(true)
+  const removeWidget = (id: string) => {
+    setWidgets(widgets.filter(w => w.id !== id))
   }
 
-  const handleConfigureChart = (id: string) => {
-    const chart = charts.find(c => c.id === id)
-    if (chart) {
-      setEditingChart(chart)
-      setShowConfigModal(true)
-    }
+  const openChartSettings = (widgetId: string) => {
+    setEditingWidgetId(widgetId)
+    setShowChartConfig(true)
   }
 
-  const handleSaveChart = (config: Partial<ChartConfig>) => {
-    if (editingChart) {
-      // Update existing chart
-      const updated = charts.map(c =>
-        c.id === editingChart.id
-          ? { ...c, ...config }
-          : c
-      )
-      saveCharts(updated)
-    } else {
-      // Add new chart
-      const newChart: ChartConfig = {
-        id: `chart-${Date.now()}`,
-        title: config.title || 'New Chart',
-        groupBy: config.groupBy || 'state'
-      }
-      saveCharts([...charts, newChart])
+  const handleSaveChartConfig = (config: any) => {
+    if (editingWidgetId) {
+      setWidgets(widgets.map(w => 
+        w.id === editingWidgetId 
+          ? { ...w, chartConfig: config }
+          : w
+      ))
     }
   }
 
-  const handleDeleteChart = (id: string) => {
-    if (window.confirm('Delete this chart?')) {
-      saveCharts(charts.filter(c => c.id !== id))
+  const widgetOptions = [
+    {
+      type: 'ritms' as const,
+      title: 'Request Items',
+      description: 'Display ServiceNow Request Items (RITMs)',
+      icon: ListChecks,
+      bgColor: 'bg-blue-100',
+      hoverBg: 'hover:bg-blue-50',
+      iconColor: 'text-blue-600',
+      borderHover: 'hover:border-blue-500'
+    },
+    {
+      type: 'incidents' as const,
+      title: 'Incidents',
+      description: 'Show incident tickets',
+      icon: AlertCircle,
+      bgColor: 'bg-red-100',
+      hoverBg: 'hover:bg-red-50',
+      iconColor: 'text-red-600',
+      borderHover: 'hover:border-red-500'
+    },
+    {
+      type: 'users' as const,
+      title: 'Users',
+      description: 'List ServiceNow users',
+      icon: Users,
+      bgColor: 'bg-green-100',
+      hoverBg: 'hover:bg-green-50',
+      iconColor: 'text-green-600',
+      borderHover: 'hover:border-green-500'
+    },
+    {
+      type: 'chart' as const,
+      title: 'Chart',
+      description: 'Data visualization charts',
+      icon: BarChart3,
+      bgColor: 'bg-purple-100',
+      hoverBg: 'hover:bg-purple-50',
+      iconColor: 'text-purple-600',
+      borderHover: 'hover:border-purple-500'
+    },
+    {
+      type: 'stats' as const,
+      title: 'Statistics',
+      description: 'Key metrics and numbers',
+      icon: Table2,
+      bgColor: 'bg-orange-100',
+      hoverBg: 'hover:bg-orange-50',
+      iconColor: 'text-orange-600',
+      borderHover: 'hover:border-orange-500'
     }
-  }
+  ]
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Builder Header */}
       <div className="bg-white border rounded-lg p-6 shadow-sm">
         <div className="flex items-start justify-between">
           <div>
@@ -93,53 +134,140 @@ export function DashboardBuilder({ dashboard }: DashboardBuilderProps) {
             )}
           </div>
           <Button
-            onClick={handleAddChart}
+            onClick={() => setShowWidgetMenu(!showWidgetMenu)}
             className="bg-blue-600 hover:bg-blue-700"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Add Chart
+            Add Widget
           </Button>
         </div>
+
+        {/* Widget Selection Menu */}
+        {showWidgetMenu && (
+          <div className="mt-6 pt-6 border-t">
+            <h3 className="text-sm font-semibold text-slate-700 mb-3">Choose a Widget Type</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {widgetOptions.map((option) => {
+                const Icon = option.icon
+                return (
+                  <button
+                    key={option.type}
+                    onClick={() => addWidget(option.type, option.title)}
+                    className={`p-4 border-2 rounded-lg ${option.borderHover} ${option.hoverBg} transition-all text-left group`}
+                  >
+                    <div className={`inline-flex p-2 ${option.bgColor} rounded-lg mb-2`}>
+                      <Icon className={`h-5 w-5 ${option.iconColor}`} />
+                    </div>
+                    <h4 className="font-semibold text-sm text-slate-900">{option.title}</h4>
+                    <p className="text-xs text-slate-600 mt-1">{option.description}</p>
+                  </button>
+                )
+              })}
+            </div>
+            <div className="mt-3 flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowWidgetMenu(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Charts Grid */}
-      {charts.length === 0 ? (
+      {/* Widgets Area */}
+      {widgets.length === 0 ? (
         <div className="bg-white border-2 border-dashed rounded-lg p-12 text-center">
           <div className="max-w-md mx-auto">
             <div className="inline-flex p-4 bg-slate-100 rounded-full mb-4">
               <LayoutDashboard className="h-8 w-8 text-slate-400" />
             </div>
             <h3 className="text-lg font-semibold text-slate-900 mb-2">
-              No Charts Yet
+              Your Dashboard is Empty
             </h3>
             <p className="text-slate-600 mb-6">
-              Add your first donut chart to visualize your RITM data. Click the &quot;Add Chart&quot; button above to get started.
+              Get started by adding widgets to display data, charts, and information. Click the &quot;Add Widget&quot; button above to begin customizing your dashboard.
             </p>
-            <Button onClick={handleAddChart} className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Your First Chart
-            </Button>
           </div>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2">
-          {charts.map((chart) => (
-            <SimpleChart
-              key={chart.id}
-              config={chart}
-              onConfigure={handleConfigureChart}
-              onDelete={handleDeleteChart}
-            />
-          ))}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {widgets.map((widget) => {
+            const option = widgetOptions.find(o => o.type === widget.type)
+            const Icon = option?.icon || Table2
+            
+            // If it's a chart widget with configuration, show the actual chart
+            if (widget.type === 'chart' && widget.chartConfig) {
+              return (
+                <div key={widget.id} className="lg:col-span-2">
+                  <SimpleChart
+                    config={{
+                      id: widget.id,
+                      title: widget.chartConfig.title,
+                      groupBy: widget.chartConfig.groupBy
+                    }}
+                    onConfigure={() => openChartSettings(widget.id)}
+                    onDelete={() => removeWidget(widget.id)}
+                  />
+                </div>
+              )
+            }
+            
+            // Otherwise show placeholder widget
+            return (
+              <Card key={widget.id} className="relative group">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 ${option?.bgColor || 'bg-slate-100'} rounded-lg`}>
+                        <Icon className={`h-5 w-5 ${option?.iconColor || 'text-slate-600'}`} />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">{widget.title}</CardTitle>
+                        <CardDescription className="text-xs">
+                          {option?.description}
+                        </CardDescription>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => removeWidget(widget.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="border-2 border-dashed rounded-lg p-8 text-center bg-slate-50">
+                    <Settings className="h-8 w-8 text-slate-400 mx-auto mb-2" />
+                    <p className="text-sm text-slate-600">Configure this widget</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-3"
+                      onClick={() => widget.type === 'chart' ? openChartSettings(widget.id) : null}
+                    >
+                      <Settings className="h-3 w-3 mr-2" />
+                      Settings
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
 
-      {/* Configuration Modal */}
+      {/* Chart Configuration Modal */}
       <ChartConfigModal
-        open={showConfigModal}
-        onOpenChange={setShowConfigModal}
-        onSave={handleSaveChart}
-        config={editingChart}
+        open={showChartConfig}
+        onOpenChange={setShowChartConfig}
+        onSave={handleSaveChartConfig}
+        config={editingWidgetId ? widgets.find(w => w.id === editingWidgetId)?.chartConfig as any : null}
       />
     </div>
   )
