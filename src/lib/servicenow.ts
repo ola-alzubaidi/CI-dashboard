@@ -2,7 +2,8 @@ import axios from 'axios'
 
 export interface ServiceNowConfig {
   instanceUrl: string
-  basicAuth: string
+  token: string
+  isOAuth: boolean // true for Bearer token, false for Basic Auth
 }
 
 export interface ServiceNowRecord {
@@ -27,12 +28,16 @@ export class ServiceNowClient {
 
   constructor(config: ServiceNowConfig) {
     this.config = config
+    const authHeader = config.isOAuth 
+      ? `Bearer ${config.token}` 
+      : `Basic ${config.token}`
+    
     this.client = axios.create({
       baseURL: `${config.instanceUrl}/api/now`,
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': `Basic ${config.basicAuth}`,
+        'Authorization': authHeader,
       },
     })
   }
@@ -170,7 +175,7 @@ export class ServiceNowClient {
 }
 
 // Utility function to create ServiceNow client from session
-export function createServiceNowClient(basicAuth: string): ServiceNowClient {
+export function createServiceNowClient(token: string, isOAuth: boolean = false): ServiceNowClient {
   const instanceUrl = process.env.SERVICENOW_INSTANCE_URL!
   
   if (!instanceUrl) {
@@ -179,6 +184,7 @@ export function createServiceNowClient(basicAuth: string): ServiceNowClient {
 
   return new ServiceNowClient({
     instanceUrl,
-    basicAuth,
+    token,
+    isOAuth,
   })
 }

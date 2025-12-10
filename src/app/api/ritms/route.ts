@@ -9,9 +9,13 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
-          if (!(session as any)?.basicAuth) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-          }
+    // Support both OAuth (accessToken) and Basic Auth (basicAuth)
+    const accessToken = (session as any)?.accessToken
+    const basicAuth = (session as any)?.basicAuth
+    
+    if (!accessToken && !basicAuth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     const { searchParams } = new URL(request.url)
     const limit = searchParams.get('limit') || '50'
@@ -19,7 +23,7 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('query') || ''
     const fields = searchParams.get('fields') || 'sys_id,number,short_description,state,priority,created_on,updated_on,requested_for,requested_by,description'
 
-    const servicenowClient = createServiceNowClient((session as any).basicAuth as string)
+    const servicenowClient = createServiceNowClient(accessToken || basicAuth, !!accessToken)
     
     const ritms = await servicenowClient.getRequestItems({
       sysparm_limit: parseInt(limit),
