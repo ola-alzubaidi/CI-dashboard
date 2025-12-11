@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, LayoutDashboard, Move } from 'lucide-react'
 import { DashboardConfig } from '@/types/dashboard'
-import { DraggableChart } from './DraggableChart'
-import { ChartConfigModal } from './ChartConfigModal'
+import { Widget } from '@/types/widget'
+import { DraggableWidget } from './DraggableWidget'
+import { WidgetConfigModal } from './WidgetConfigModal'
 import {
   DndContext,
   closestCenter,
@@ -22,22 +23,16 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable'
 
-interface ChartConfig {
-  id: string
-  title: string
-  groupBy: 'state' | 'priority' | 'assigned_to'
-}
-
 interface DashboardBuilderProps {
   dashboard: DashboardConfig
 }
 
-const getStorageKey = (dashboardId: string) => `dashboard-charts-${dashboardId}`
+const getStorageKey = (dashboardId: string) => `dashboard-widgets-${dashboardId}`
 
 export function DashboardBuilder({ dashboard }: DashboardBuilderProps) {
-  const [charts, setCharts] = useState<ChartConfig[]>([])
+  const [widgets, setWidgets] = useState<Widget[]>([])
   const [showConfigModal, setShowConfigModal] = useState(false)
-  const [editingChart, setEditingChart] = useState<ChartConfig | null>(null)
+  const [editingWidget, setEditingWidget] = useState<Widget | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -50,70 +45,75 @@ export function DashboardBuilder({ dashboard }: DashboardBuilderProps) {
     })
   )
 
-  // Load charts from localStorage
+  // Load widgets from localStorage
   useEffect(() => {
     const stored = localStorage.getItem(getStorageKey(dashboard.id))
     if (stored) {
       try {
-        setCharts(JSON.parse(stored))
+        setWidgets(JSON.parse(stored))
       } catch (e) {
-        console.error('Error loading charts:', e)
+        console.error('Error loading widgets:', e)
       }
     }
   }, [dashboard.id])
 
-  // Save charts to localStorage
-  const saveCharts = (newCharts: ChartConfig[]) => {
-    setCharts(newCharts)
-    localStorage.setItem(getStorageKey(dashboard.id), JSON.stringify(newCharts))
+  // Save widgets to localStorage
+  const saveWidgets = (newWidgets: Widget[]) => {
+    setWidgets(newWidgets)
+    localStorage.setItem(getStorageKey(dashboard.id), JSON.stringify(newWidgets))
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
 
     if (over && active.id !== over.id) {
-      const oldIndex = charts.findIndex((chart) => chart.id === active.id)
-      const newIndex = charts.findIndex((chart) => chart.id === over.id)
+      const oldIndex = widgets.findIndex((w) => w.id === active.id)
+      const newIndex = widgets.findIndex((w) => w.id === over.id)
       
-      const newCharts = arrayMove(charts, oldIndex, newIndex)
-      saveCharts(newCharts)
+      const newWidgets = arrayMove(widgets, oldIndex, newIndex)
+      saveWidgets(newWidgets)
     }
   }
 
-  const handleAddChart = () => {
-    setEditingChart(null)
+  const handleAddWidget = () => {
+    setEditingWidget(null)
     setShowConfigModal(true)
   }
 
-  const handleConfigureChart = (id: string) => {
-    const chart = charts.find(c => c.id === id)
-    if (chart) {
-      setEditingChart(chart)
+  const handleConfigureWidget = (id: string) => {
+    const widget = widgets.find(w => w.id === id)
+    if (widget) {
+      setEditingWidget(widget)
       setShowConfigModal(true)
     }
   }
 
-  const handleSaveChart = (config: Partial<ChartConfig>) => {
-    if (editingChart) {
-      const updated = charts.map(c =>
-        c.id === editingChart.id
-          ? { ...c, ...config }
-          : c
+  const handleSaveWidget = (config: Partial<Widget>) => {
+    if (editingWidget) {
+      const updated = widgets.map(w =>
+        w.id === editingWidget.id
+          ? { ...w, ...config }
+          : w
       )
-      saveCharts(updated)
+      saveWidgets(updated)
     } else {
-      const newChart: ChartConfig = {
-        id: `chart-${Date.now()}`,
-        title: config.title || 'New Chart',
-        groupBy: config.groupBy || 'state'
+      const newWidget: Widget = {
+        id: `widget-${Date.now()}`,
+        type: config.type || 'chart',
+        title: config.title || 'New Widget',
+        dataSource: config.dataSource || 'sc_req_item',
+        chartType: config.chartType,
+        groupBy: config.groupBy,
+        filter: config.filter,
+        limit: config.limit,
       }
-      saveCharts([...charts, newChart])
+      saveWidgets([...widgets, newWidget])
     }
   }
 
-  const handleDeleteChart = (id: string) => {
-    if (window.confirm('Delete this chart?')) {
-      saveCharts(charts.filter(c => c.id !== id))
+  const handleDeleteWidget = (id: string) => {
+    if (window.confirm('Delete this widget?')) {
+      saveWidgets(widgets.filter(w => w.id !== id))
     }
   }
 
@@ -127,39 +127,39 @@ export function DashboardBuilder({ dashboard }: DashboardBuilderProps) {
             {dashboard.description && (
               <p className="text-slate-600 mt-1">{dashboard.description}</p>
             )}
-            {charts.length > 0 && (
+            {widgets.length > 0 && (
               <div className="flex items-center gap-2 mt-3 text-sm text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg w-fit">
                 <Move className="h-4 w-4" />
-                <span>Drag charts by the grip handle to reorder</span>
+                <span>Drag widgets by the grip handle to reorder</span>
               </div>
             )}
           </div>
           <Button
-            onClick={handleAddChart}
+            onClick={handleAddWidget}
             className="bg-blue-600 hover:bg-blue-700"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Add Chart
+            Add Widget
           </Button>
         </div>
       </div>
 
-      {/* Charts Grid with Drag & Drop */}
-      {charts.length === 0 ? (
+      {/* Widgets Grid with Drag & Drop */}
+      {widgets.length === 0 ? (
         <div className="bg-white border-2 border-dashed rounded-lg p-12 text-center">
           <div className="max-w-md mx-auto">
             <div className="inline-flex p-4 bg-slate-100 rounded-full mb-4">
               <LayoutDashboard className="h-8 w-8 text-slate-400" />
             </div>
             <h3 className="text-lg font-semibold text-slate-900 mb-2">
-              No Charts Yet
+              No Widgets Yet
             </h3>
             <p className="text-slate-600 mb-6">
-              Add your first chart to visualize your RITM data. You can drag and drop to rearrange them!
+              Add widgets to visualize your ServiceNow data. Choose from charts, tables, metrics, and lists!
             </p>
-            <Button onClick={handleAddChart} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={handleAddWidget} className="bg-blue-600 hover:bg-blue-700">
               <Plus className="h-4 w-4 mr-2" />
-              Add Your First Chart
+              Add Your First Widget
             </Button>
           </div>
         </div>
@@ -169,14 +169,14 @@ export function DashboardBuilder({ dashboard }: DashboardBuilderProps) {
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext items={charts.map(c => c.id)} strategy={rectSortingStrategy}>
+          <SortableContext items={widgets.map(w => w.id)} strategy={rectSortingStrategy}>
             <div className="grid gap-6 md:grid-cols-2">
-              {charts.map((chart) => (
-                <DraggableChart
-                  key={chart.id}
-                  config={chart}
-                  onConfigure={handleConfigureChart}
-                  onDelete={handleDeleteChart}
+              {widgets.map((widget) => (
+                <DraggableWidget
+                  key={widget.id}
+                  widget={widget}
+                  onConfigure={handleConfigureWidget}
+                  onDelete={handleDeleteWidget}
                 />
               ))}
             </div>
@@ -185,11 +185,11 @@ export function DashboardBuilder({ dashboard }: DashboardBuilderProps) {
       )}
 
       {/* Configuration Modal */}
-      <ChartConfigModal
+      <WidgetConfigModal
         open={showConfigModal}
         onOpenChange={setShowConfigModal}
-        onSave={handleSaveChart}
-        config={editingChart}
+        onSave={handleSaveWidget}
+        widget={editingWidget}
       />
     </div>
   )
