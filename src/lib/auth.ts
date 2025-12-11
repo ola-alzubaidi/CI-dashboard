@@ -5,7 +5,7 @@ export const authOptions = {
     {
       id: "servicenow",
       name: "ServiceNow",
-      type: "oauth",
+      type: "oauth" as const,
       clientId: process.env.SERVICENOW_CLIENT_ID,
       clientSecret: process.env.SERVICENOW_CLIENT_SECRET,
       authorization: {
