@@ -28,11 +28,14 @@ export const DATA_SOURCE_FIELDS: Record<DataSource, string[]> = {
   'task': ['state', 'priority', 'assigned_to', 'task_type'],
 }
 
+export type WidgetSize = 'small' | 'medium' | 'large' | 'full'
+
 export interface Widget {
   id: string
   type: WidgetType
   title: string
   dataSource: DataSource
+  size?: WidgetSize
   // Chart specific
   chartType?: ChartType
   groupBy?: string
