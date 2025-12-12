@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Widget } from '@/types/widget'
 import { RefreshCw, Circle } from 'lucide-react'
 
@@ -28,30 +28,43 @@ const getPriorityColor = (priority: string) => {
 export function ListWidget({ widget }: ListWidgetProps) {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const params = new URLSearchParams({
         limit: String(widget.limit || 10),
-        ...(widget.filter && { query: widget.filter }),
       })
+      if (widget.filter) {
+        params.append('query', widget.filter)
+      }
+      
+      console.log(`[ListWidget] Fetching from /api/servicenow/${widget.dataSource}?${params}`)
       
       const response = await fetch(`/api/servicenow/${widget.dataSource}?${params}`)
-      if (!response.ok) throw new Error('Failed to fetch data')
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `Failed to fetch: ${response.status}`)
+      }
       
       const result = await response.json()
+      console.log(`[ListWidget] Received ${result.data?.length || 0} records from ${widget.dataSource}`)
       setData(result.data || [])
-    } catch (error) {
-      console.error('Error fetching list data:', error)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load data'
+      console.error('[ListWidget] Error:', errorMessage)
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
-  }
+  }, [widget.dataSource, widget.filter, widget.limit])
 
   useEffect(() => {
     fetchData()
-  }, [widget])
+  }, [fetchData])
 
   if (loading) {
     return (
@@ -61,10 +74,25 @@ export function ListWidget({ widget }: ListWidgetProps) {
     )
   }
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[200px] text-red-500 p-4 text-center">
+        <p className="font-medium">Error loading data</p>
+        <p className="text-sm mt-1">{error}</p>
+        <button 
+          onClick={fetchData}
+          className="mt-3 text-xs text-blue-600 hover:underline"
+        >
+          Try again
+        </button>
+      </div>
+    )
+  }
+
   if (data.length === 0) {
     return (
       <div className="flex items-center justify-center h-[200px] text-slate-500">
-        No items found
+        No items found for {widget.dataSource}
       </div>
     )
   }
