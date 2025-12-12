@@ -2,6 +2,17 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Widget } from '@/types/widget'
+
+// Helper to safely get display value from ServiceNow fields
+// ServiceNow can return objects like {link: "...", value: "..."} for reference fields
+const getDisplayValue = (value: any): string => {
+  if (value === null || value === undefined) return 'Unknown'
+  if (typeof value === 'object') {
+    // Handle ServiceNow reference objects {link, value} or {display_value, value}
+    return value.display_value || value.value || value.name || JSON.stringify(value)
+  }
+  return String(value)
+}
 import {
   PieChart,
   Pie,
@@ -61,7 +72,8 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
 
       // Group data by the selected field
       const grouped = records.reduce((acc: any, record: any) => {
-        const key = record[widget.groupBy || 'state']?.toString() || 'Unknown'
+        const rawValue = record[widget.groupBy || 'state']
+        const key = getDisplayValue(rawValue)
         acc[key] = (acc[key] || 0) + 1
         return acc
       }, {})

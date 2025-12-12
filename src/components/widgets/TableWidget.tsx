@@ -5,6 +5,16 @@ import { Widget } from '@/types/widget'
 import { RefreshCw } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 
+// Helper to safely get display value from ServiceNow fields
+// ServiceNow can return objects like {link: "...", value: "..."} for reference fields
+const getDisplayValue = (value: any): string => {
+  if (value === null || value === undefined) return ''
+  if (typeof value === 'object') {
+    return value.display_value || value.value || value.name || ''
+  }
+  return String(value)
+}
+
 interface TableWidgetProps {
   widget: Widget
 }
@@ -134,24 +144,24 @@ export function TableWidget({ widget }: TableWidgetProps) {
             <Card key={row.sys_id || idx} className="hover:shadow-md transition-shadow">
               <CardContent className="p-4">
                 <div className="flex justify-between items-start mb-2">
-                  <span className="font-semibold text-blue-600">{row.number || `#${idx + 1}`}</span>
+                  <span className="font-semibold text-blue-600">{getDisplayValue(row.number) || `#${idx + 1}`}</span>
                   {row.priority && (
-                    <span className={`text-xs px-2 py-0.5 rounded border ${getPriorityColor(row.priority)}`}>
-                      P{row.priority}
+                    <span className={`text-xs px-2 py-0.5 rounded border ${getPriorityColor(getDisplayValue(row.priority))}`}>
+                      P{getDisplayValue(row.priority)}
                     </span>
                   )}
                 </div>
                 <p className="text-sm text-slate-700 line-clamp-2 mb-2">
-                  {row.short_description || row.description || '-'}
+                  {getDisplayValue(row.short_description) || getDisplayValue(row.description) || '-'}
                 </p>
                 <div className="flex justify-between items-center text-xs">
                   {row.state && (
-                    <span className={`px-2 py-0.5 rounded ${getStateColor(row.state)}`}>
-                      {row.state}
+                    <span className={`px-2 py-0.5 rounded ${getStateColor(getDisplayValue(row.state))}`}>
+                      {getDisplayValue(row.state)}
                     </span>
                   )}
                   {row.assigned_to && (
-                    <span className="text-slate-500">{row.assigned_to}</span>
+                    <span className="text-slate-500">{getDisplayValue(row.assigned_to)}</span>
                   )}
                 </div>
               </CardContent>
@@ -176,18 +186,18 @@ export function TableWidget({ widget }: TableWidgetProps) {
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-blue-600">{row.number || `#${idx + 1}`}</span>
+                <span className="font-medium text-blue-600">{getDisplayValue(row.number) || `#${idx + 1}`}</span>
                 {row.priority && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${getPriorityColor(row.priority)}`}>
-                    P{row.priority}
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${getPriorityColor(getDisplayValue(row.priority))}`}>
+                    P{getDisplayValue(row.priority)}
                   </span>
                 )}
               </div>
-              <p className="text-sm text-slate-600 truncate">{row.short_description || '-'}</p>
+              <p className="text-sm text-slate-600 truncate">{getDisplayValue(row.short_description) || '-'}</p>
             </div>
             {row.state && (
-              <span className={`text-xs px-2 py-1 rounded ${getStateColor(row.state)}`}>
-                {row.state}
+              <span className={`text-xs px-2 py-1 rounded ${getStateColor(getDisplayValue(row.state))}`}>
+                {getDisplayValue(row.state)}
               </span>
             )}
           </div>
@@ -208,11 +218,11 @@ export function TableWidget({ widget }: TableWidgetProps) {
             key={row.sys_id || idx} 
             className="flex items-center gap-2 py-1.5 px-2 hover:bg-slate-50 rounded text-sm"
           >
-            <span className="font-medium text-blue-600 w-24 flex-shrink-0">{row.number || `#${idx + 1}`}</span>
-            <span className="flex-1 truncate text-slate-600">{row.short_description || '-'}</span>
+            <span className="font-medium text-blue-600 w-24 flex-shrink-0">{getDisplayValue(row.number) || `#${idx + 1}`}</span>
+            <span className="flex-1 truncate text-slate-600">{getDisplayValue(row.short_description) || '-'}</span>
             {row.state && (
-              <span className={`text-xs px-1.5 py-0.5 rounded ${getStateColor(row.state)}`}>
-                {row.state}
+              <span className={`text-xs px-1.5 py-0.5 rounded ${getStateColor(getDisplayValue(row.state))}`}>
+                {getDisplayValue(row.state)}
               </span>
             )}
           </div>
@@ -242,21 +252,24 @@ export function TableWidget({ widget }: TableWidgetProps) {
         <tbody>
           {data.map((row, idx) => (
             <tr key={row.sys_id || idx} className="hover:bg-slate-50">
-              {columns.map((col) => (
-                <td key={col} className="p-2 border-b border-slate-100 truncate max-w-[200px]">
-                  {col === 'priority' && row[col] ? (
-                    <span className={`text-xs px-2 py-0.5 rounded border ${getPriorityColor(row[col])}`}>
-                      P{row[col]}
-                    </span>
-                  ) : col === 'state' && row[col] ? (
-                    <span className={`text-xs px-2 py-0.5 rounded ${getStateColor(row[col])}`}>
-                      {row[col]}
-                    </span>
-                  ) : (
-                    row[col]?.toString() || '-'
-                  )}
-                </td>
-              ))}
+              {columns.map((col) => {
+                const value = getDisplayValue(row[col])
+                return (
+                  <td key={col} className="p-2 border-b border-slate-100 truncate max-w-[200px]">
+                    {col === 'priority' && value ? (
+                      <span className={`text-xs px-2 py-0.5 rounded border ${getPriorityColor(value)}`}>
+                        P{value}
+                      </span>
+                    ) : col === 'state' && value ? (
+                      <span className={`text-xs px-2 py-0.5 rounded ${getStateColor(value)}`}>
+                        {value}
+                      </span>
+                    ) : (
+                      value || '-'
+                    )}
+                  </td>
+                )
+              })}
             </tr>
           ))}
         </tbody>

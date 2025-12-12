@@ -4,6 +4,15 @@ import { useState, useEffect, useCallback } from 'react'
 import { Widget } from '@/types/widget'
 import { RefreshCw, Circle } from 'lucide-react'
 
+// Helper to safely get display value from ServiceNow fields
+const getDisplayValue = (value: any): string => {
+  if (value === null || value === undefined) return ''
+  if (typeof value === 'object') {
+    return value.display_value || value.value || value.name || ''
+  }
+  return String(value)
+}
+
 interface ListWidgetProps {
   widget: Widget
 }
@@ -117,18 +126,18 @@ export function ListWidget({ widget }: ListWidgetProps) {
           key={item.sys_id || idx} 
           className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
         >
-          <Circle className={`h-3 w-3 mt-1.5 fill-current ${getPriorityColor(item.priority)}`} />
+          <Circle className={`h-3 w-3 mt-1.5 fill-current ${getPriorityColor(getDisplayValue(item.priority))}`} />
           <div className="flex-1 min-w-0">
             <div className="font-medium text-sm truncate">
-              {item.number || item.user_name || `Item ${idx + 1}`}
+              {getDisplayValue(item.number) || getDisplayValue(item.user_name) || `Item ${idx + 1}`}
             </div>
             <div className="text-xs text-slate-500 truncate">
-              {item.short_description || item.email || item.state || '-'}
+              {getDisplayValue(item.short_description) || getDisplayValue(item.email) || getDisplayValue(item.state) || '-'}
             </div>
           </div>
           {item.state && (
             <span className="text-xs bg-slate-200 px-2 py-0.5 rounded">
-              {item.state}
+              {getDisplayValue(item.state)}
             </span>
           )}
         </div>
