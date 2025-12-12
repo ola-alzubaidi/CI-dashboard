@@ -221,13 +221,9 @@ export function DashboardBuilder({ dashboard }: DashboardBuilderProps) {
             <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
               No Widgets Yet
             </h3>
-            <p className={`mb-6 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-              Add widgets to visualize your ServiceNow data. Choose from charts, tables, metrics, and lists!
+            <p className={`${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+              Click the &quot;Add Widget&quot; button above to add charts, tables, metrics, and lists!
             </p>
-            <Button onClick={handleAddWidget} className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Your First Widget
-            </Button>
           </div>
         </div>
       ) : (
