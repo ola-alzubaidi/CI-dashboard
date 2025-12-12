@@ -2,6 +2,8 @@ export type WidgetType = 'chart' | 'table' | 'metric' | 'list'
 
 export type ChartType = 'pie' | 'donut' | 'bar' | 'line'
 
+export type LayoutType = 'card' | 'table' | 'list' | 'compact'
+
 export type DataSource = 
   | 'sc_req_item'      // RITMs
   | 'incident'         // Incidents
@@ -36,6 +38,7 @@ export interface Widget {
   title: string
   dataSource: DataSource
   size?: WidgetSize
+  layout?: LayoutType
   // Chart specific
   chartType?: ChartType
   groupBy?: string

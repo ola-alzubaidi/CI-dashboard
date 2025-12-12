@@ -18,13 +18,18 @@ import {
   Hash, 
   List,
   PieChart,
-  Activity
+  Activity,
+  LayoutGrid,
+  Rows,
+  Square,
+  Minimize2
 } from 'lucide-react'
 import { 
   Widget, 
   WidgetType, 
   ChartType, 
   DataSource, 
+  LayoutType,
   DATA_SOURCE_LABELS,
   DATA_SOURCE_FIELDS 
 } from '@/types/widget'
@@ -47,6 +52,7 @@ export function WidgetConfigModal({
   const [dataSource, setDataSource] = useState<DataSource>('sc_req_item')
   const [chartType, setChartType] = useState<ChartType>('donut')
   const [groupBy, setGroupBy] = useState('state')
+  const [layout, setLayout] = useState<LayoutType>('card')
   const [filter, setFilter] = useState('')
   const [limit, setLimit] = useState(50)
 
@@ -57,6 +63,7 @@ export function WidgetConfigModal({
       setDataSource(widget.dataSource)
       setChartType(widget.chartType || 'donut')
       setGroupBy(widget.groupBy || 'state')
+      setLayout(widget.layout || 'card')
       setFilter(widget.filter || '')
       setLimit(widget.limit || 50)
     } else if (open && !widget) {
@@ -66,6 +73,7 @@ export function WidgetConfigModal({
       setDataSource('sc_req_item')
       setChartType('donut')
       setGroupBy('state')
+      setLayout('card')
       setFilter('')
       setLimit(50)
     }
@@ -78,6 +86,7 @@ export function WidgetConfigModal({
       dataSource,
       chartType: widgetType === 'chart' ? chartType : undefined,
       groupBy: widgetType === 'chart' ? groupBy : undefined,
+      layout,
       filter,
       limit,
     })
@@ -96,6 +105,13 @@ export function WidgetConfigModal({
     { type: 'pie', icon: PieChart, label: 'Pie' },
     { type: 'bar', icon: BarChart3, label: 'Bar' },
     { type: 'line', icon: Activity, label: 'Line' },
+  ]
+
+  const layoutTypes: { type: LayoutType; icon: any; label: string; desc: string }[] = [
+    { type: 'card', icon: Square, label: 'Cards', desc: 'Card grid view' },
+    { type: 'table', icon: Table2, label: 'Table', desc: 'Table rows' },
+    { type: 'list', icon: Rows, label: 'List', desc: 'Simple list' },
+    { type: 'compact', icon: Minimize2, label: 'Compact', desc: 'Minimal view' },
   ]
 
   return (
@@ -132,6 +148,32 @@ export function WidgetConfigModal({
               ))}
             </div>
           </div>
+
+          {/* Layout Selection (for table, list, metric widgets) */}
+          {(widgetType === 'table' || widgetType === 'list') && (
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">Display Layout</Label>
+              <div className="grid grid-cols-4 gap-3">
+                {layoutTypes.map(({ type, icon: Icon, label, desc }) => (
+                  <button
+                    key={type}
+                    onClick={() => setLayout(type)}
+                    className={`p-3 border-2 rounded-lg text-center transition-all ${
+                      layout === type
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <Icon className={`h-5 w-5 mx-auto mb-1 ${
+                      layout === type ? 'text-green-600' : 'text-slate-500'
+                    }`} />
+                    <div className="font-medium text-sm">{label}</div>
+                    <div className="text-xs text-slate-500">{desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Data Source */}
           <div className="space-y-2">
@@ -241,4 +283,3 @@ export function WidgetConfigModal({
     </Dialog>
   )
 }
-
