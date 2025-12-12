@@ -119,12 +119,14 @@ export function DashboardBuilder({ dashboard }: DashboardBuilderProps) {
   }
 
   const handleSaveWidget = (config: Partial<Widget>) => {
+    console.log('[DashboardBuilder] Saving widget config:', config)
     if (editingWidget) {
       const updated = widgets.map(w =>
         w.id === editingWidget.id
           ? { ...w, ...config }
           : w
       )
+      console.log('[DashboardBuilder] Updated widget:', updated.find(w => w.id === editingWidget.id))
       saveWidgets(updated)
     } else {
       const newWidget: Widget = {
@@ -135,9 +137,11 @@ export function DashboardBuilder({ dashboard }: DashboardBuilderProps) {
         size: 'medium',
         chartType: config.chartType,
         groupBy: config.groupBy,
+        layout: config.layout,
         filter: config.filter,
         limit: config.limit,
       }
+      console.log('[DashboardBuilder] Creating new widget:', newWidget)
       saveWidgets([...widgets, newWidget])
     }
   }

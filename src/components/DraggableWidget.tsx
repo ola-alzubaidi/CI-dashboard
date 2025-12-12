@@ -85,7 +85,8 @@ export function DraggableWidget({
   const widgetWithFilter = { ...widget, filter: effectiveFilter }
 
   const renderWidget = () => {
-    const key = `${widget.id}-${refreshKey}-${globalFilter}`
+    // Include dataSource, filter, and other config in key to force re-render on changes
+    const key = `${widget.id}-${widget.dataSource}-${widget.chartType}-${widget.groupBy}-${widget.limit}-${refreshKey}-${globalFilter}`
     
     switch (widget.type) {
       case 'chart':
