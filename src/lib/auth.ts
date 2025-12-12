@@ -17,7 +17,7 @@ export const authOptions = {
       },
       token: {
         url: `${process.env.SERVICENOW_INSTANCE_URL}/oauth_token.do`,
-        async request({ client, params, checks, provider }: any) {
+        async request({ params }: any) {
           const response = await fetch(`${process.env.SERVICENOW_INSTANCE_URL}/oauth_token.do`, {
             method: "POST",
             headers: {
@@ -33,7 +33,6 @@ export const authOptions = {
           })
           
           const tokens = await response.json()
-          console.log("Token response:", tokens)
           
           if (tokens.error) {
             throw new Error(tokens.error_description || tokens.error)
@@ -44,8 +43,6 @@ export const authOptions = {
       },
       userinfo: {
         async request({ tokens }: any) {
-          console.log("Fetching user info with token:", tokens.access_token?.substring(0, 20) + "...")
-          
           const response = await fetch(
             `${process.env.SERVICENOW_INSTANCE_URL}/api/now/table/sys_user?sysparm_limit=1&sysparm_fields=sys_id,user_name,email,first_name,last_name`,
             {
@@ -57,13 +54,10 @@ export const authOptions = {
           )
           
           if (!response.ok) {
-            console.error("User info fetch failed:", response.status, await response.text())
             return { sub: "oauth-user", name: "OAuth User", email: "user@servicenow.com" }
           }
           
           const data = await response.json()
-          console.log("User info response:", data)
-          
           const user = data.result?.[0]
           return {
             sub: user?.sys_id || "oauth-user",
@@ -73,7 +67,6 @@ export const authOptions = {
         },
       },
       profile(profile: any) {
-        console.log("Profile:", profile)
         return {
           id: profile.sub,
           name: profile.name,
@@ -86,14 +79,12 @@ export const authOptions = {
     signIn: "/auth/signin",
     error: "/auth/error",
   },
-  debug: true,
+  debug: false,
   callbacks: {
-    async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
-      console.log("Redirect callback:", { url, baseUrl })
+    async redirect({ baseUrl }: { url: string; baseUrl: string }) {
       return `${baseUrl}/ritms`
     },
     async jwt({ token, user, account }: { token: JWT; user: any; account: any }) {
-      console.log("JWT callback:", { hasUser: !!user, hasAccount: !!account })
       if (account) {
         token.accessToken = account.access_token
         token.refreshToken = account.refresh_token
@@ -108,8 +99,7 @@ export const authOptions = {
       session.username = token.username
       return session
     },
-    async signIn({ user, account }: any) {
-      console.log("SignIn callback:", { user, hasAccount: !!account })
+    async signIn() {
       return true
     },
   },
