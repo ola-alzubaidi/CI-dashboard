@@ -22,7 +22,10 @@ import {
   LayoutGrid,
   Rows,
   Square,
-  Minimize2
+  Minimize2,
+  RectangleHorizontal,
+  RectangleVertical,
+  Maximize2
 } from 'lucide-react'
 import { 
   Widget, 
@@ -30,6 +33,7 @@ import {
   ChartType, 
   DataSource, 
   LayoutType,
+  WidgetSize,
   DATA_SOURCE_LABELS,
   DATA_SOURCE_FIELDS 
 } from '@/types/widget'
@@ -53,6 +57,7 @@ export function WidgetConfigModal({
   const [chartType, setChartType] = useState<ChartType>('donut')
   const [groupBy, setGroupBy] = useState('state')
   const [layout, setLayout] = useState<LayoutType>('card')
+  const [size, setSize] = useState<WidgetSize>('medium')
   const [filter, setFilter] = useState('')
   const [limit, setLimit] = useState(50)
 
@@ -64,6 +69,7 @@ export function WidgetConfigModal({
       setChartType(widget.chartType || 'donut')
       setGroupBy(widget.groupBy || 'state')
       setLayout(widget.layout || 'card')
+      setSize(widget.size || 'medium')
       setFilter(widget.filter || '')
       setLimit(widget.limit || 50)
     } else if (open && !widget) {
@@ -74,6 +80,7 @@ export function WidgetConfigModal({
       setChartType('donut')
       setGroupBy('state')
       setLayout('card')
+      setSize('medium')
       setFilter('')
       setLimit(50)
     }
@@ -87,6 +94,7 @@ export function WidgetConfigModal({
       chartType: widgetType === 'chart' ? chartType : undefined,
       groupBy: widgetType === 'chart' ? groupBy : undefined,
       layout,
+      size,
       filter,
       limit,
     })
@@ -112,6 +120,13 @@ export function WidgetConfigModal({
     { type: 'table', icon: Table2, label: 'Table', desc: 'Table rows' },
     { type: 'list', icon: Rows, label: 'List', desc: 'Simple list' },
     { type: 'compact', icon: Minimize2, label: 'Compact', desc: 'Minimal view' },
+  ]
+
+  const sizeTypes: { type: WidgetSize; icon: any; label: string; desc: string }[] = [
+    { type: 'small', icon: Minimize2, label: 'Small', desc: '1 column' },
+    { type: 'medium', icon: RectangleVertical, label: 'Medium', desc: '1 column' },
+    { type: 'large', icon: RectangleHorizontal, label: 'Large', desc: '2 columns' },
+    { type: 'full', icon: Maximize2, label: 'Full Width', desc: '3 columns' },
   ]
 
   return (
@@ -244,6 +259,30 @@ export function WidgetConfigModal({
               </select>
             </div>
           )}
+
+          {/* Widget Size */}
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">Widget Size</Label>
+            <div className="grid grid-cols-4 gap-3">
+              {sizeTypes.map(({ type, icon: Icon, label, desc }) => (
+                <button
+                  key={type}
+                  onClick={() => setSize(type)}
+                  className={`p-3 border-2 rounded-lg text-center transition-all ${
+                    size === type
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <Icon className={`h-5 w-5 mx-auto mb-1 ${
+                    size === type ? 'text-blue-600' : 'text-slate-500'
+                  }`} />
+                  <div className="font-medium text-sm">{label}</div>
+                  <div className="text-xs text-slate-500">{desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Filter */}
           <div className="space-y-2">

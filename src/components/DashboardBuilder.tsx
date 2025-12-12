@@ -134,7 +134,7 @@ export function DashboardBuilder({ dashboard }: DashboardBuilderProps) {
         type: config.type || 'chart',
         title: config.title || 'New Widget',
         dataSource: config.dataSource || 'sc_req_item',
-        size: 'medium',
+        size: config.size || 'medium',
         chartType: config.chartType,
         groupBy: config.groupBy,
         layout: config.layout,
