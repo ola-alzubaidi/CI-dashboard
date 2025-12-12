@@ -62,7 +62,10 @@ export function TableWidget({ widget }: TableWidgetProps) {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || `Failed to fetch: ${response.status}`)
+        if (response.status === 401) {
+          throw new Error('Session expired. Please sign in again.')
+        }
+        throw new Error(errorData.details || errorData.error || `Failed to fetch: ${response.status}`)
       }
       
       const result = await response.json()
@@ -90,16 +93,26 @@ export function TableWidget({ widget }: TableWidgetProps) {
   }
 
   if (error) {
+    const isSessionError = error.includes('Session expired') || error.includes('sign in')
     return (
       <div className="flex flex-col items-center justify-center h-[200px] text-red-500 p-4 text-center">
         <p className="font-medium">Error loading data</p>
         <p className="text-sm mt-1">{error}</p>
-        <button 
-          onClick={fetchData}
-          className="mt-3 text-xs text-blue-600 hover:underline"
-        >
-          Try again
-        </button>
+        {isSessionError ? (
+          <a 
+            href="/auth/signin"
+            className="mt-3 text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700"
+          >
+            Sign in again
+          </a>
+        ) : (
+          <button 
+            onClick={fetchData}
+            className="mt-3 text-xs text-blue-600 hover:underline"
+          >
+            Try again
+          </button>
+        )}
       </div>
     )
   }

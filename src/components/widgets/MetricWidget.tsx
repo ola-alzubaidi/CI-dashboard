@@ -30,7 +30,10 @@ export function MetricWidget({ widget }: MetricWidgetProps) {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || `Failed to fetch: ${response.status}`)
+        if (response.status === 401) {
+          throw new Error('Session expired. Please sign in again.')
+        }
+        throw new Error(errorData.details || errorData.error || `Failed to fetch: ${response.status}`)
       }
       
       const result = await response.json()
@@ -59,16 +62,26 @@ export function MetricWidget({ widget }: MetricWidgetProps) {
   }
 
   if (error) {
+    const isSessionError = error.includes('Session expired') || error.includes('sign in')
     return (
       <div className="flex flex-col items-center justify-center h-[150px] text-red-500 p-4 text-center">
         <p className="font-medium text-sm">Error</p>
         <p className="text-xs mt-1">{error}</p>
-        <button 
-          onClick={fetchData}
-          className="mt-2 text-xs text-blue-600 hover:underline"
-        >
-          Retry
-        </button>
+        {isSessionError ? (
+          <a 
+            href="/auth/signin"
+            className="mt-2 text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700"
+          >
+            Sign in
+          </a>
+        ) : (
+          <button 
+            onClick={fetchData}
+            className="mt-2 text-xs text-blue-600 hover:underline"
+          >
+            Retry
+          </button>
+        )}
       </div>
     )
   }
