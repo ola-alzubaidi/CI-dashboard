@@ -65,8 +65,12 @@ export default function RITMsPage() {
 
     if (status === "unauthenticated") {
       router.push("/auth/signin")
-    } else if (mounted && (session as any)?.basicAuth) {
-      fetchRITMs()
+    } else if (status === "authenticated" && session) {
+      // Check for either OAuth accessToken or basicAuth
+      const hasAuth = (session as any)?.accessToken || (session as any)?.basicAuth
+      if (hasAuth) {
+        fetchRITMs()
+      }
     }
   }, [session, status, mounted, router, activeDashboard, fetchRITMs])
 
