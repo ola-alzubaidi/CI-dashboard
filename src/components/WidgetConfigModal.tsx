@@ -4,7 +4,10 @@ import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog"
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { 
@@ -145,6 +148,12 @@ export function WidgetConfigModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl p-0 gap-0 overflow-hidden bg-gradient-to-b from-slate-50 to-white">
+        {/* Accessibility: Hidden title for screen readers */}
+        <VisuallyHidden.Root>
+          <DialogTitle>{widget ? 'Edit Widget' : 'Create Widget'}</DialogTitle>
+          <DialogDescription>Configure your widget settings</DialogDescription>
+        </VisuallyHidden.Root>
+        
         {/* Header */}
         <div className="relative bg-gradient-to-r from-slate-900 to-slate-800 text-white p-6">
           <button 
