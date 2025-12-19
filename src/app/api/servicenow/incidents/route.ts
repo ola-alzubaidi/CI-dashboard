@@ -28,7 +28,10 @@ export async function GET(request: NextRequest) {
       sysparm_fields: fields,
     })
 
-    return NextResponse.json({ incidents })
+    return NextResponse.json({ 
+      incidents,
+      instanceUrl: process.env.SERVICENOW_INSTANCE_URL || ''
+    })
   } catch (error) {
     // Error fetching incidents
     return NextResponse.json(

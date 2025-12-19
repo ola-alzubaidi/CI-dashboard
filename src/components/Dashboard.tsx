@@ -22,6 +22,7 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<string>('profile')
+  const [instanceUrl, setInstanceUrl] = useState<string>('')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -35,6 +36,7 @@ export function Dashboard() {
         }
         const data = await response.json()
         setIncidents(data.incidents || [])
+        if (data.instanceUrl) setInstanceUrl(data.instanceUrl)
         setSuccess(`Successfully loaded ${data.incidents?.length || 0} incidents`)
       } else if (activeTab === 'users') {
         const response = await fetch('/api/servicenow/users?limit=20')
@@ -51,6 +53,7 @@ export function Dashboard() {
         }
         const data = await response.json()
         setRequestItems(data.requestItems || [])
+        if (data.instanceUrl) setInstanceUrl(data.instanceUrl)
         setSuccess(`Successfully loaded ${data.requestItems?.length || 0} request items`)
       } else if (activeTab === 'profile') {
         const response = await fetch('/api/servicenow/profile')
@@ -198,7 +201,7 @@ export function Dashboard() {
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                       {incidents.length > 0 ? (
                         incidents.map((incident) => (
-                          <IncidentCard key={incident.sys_id} incident={incident} />
+                          <IncidentCard key={incident.sys_id} incident={incident} instanceUrl={instanceUrl} />
                         ))
                       ) : (
                         <Card className="col-span-full">
@@ -230,7 +233,7 @@ export function Dashboard() {
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                       {requestItems.length > 0 ? (
                         requestItems.map((requestItem) => (
-                          <RequestItemCard key={requestItem.sys_id} requestItem={requestItem} />
+                          <RequestItemCard key={requestItem.sys_id} requestItem={requestItem} instanceUrl={instanceUrl} />
                         ))
                       ) : (
                         <Card className="col-span-full">

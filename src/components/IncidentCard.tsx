@@ -3,14 +3,15 @@
 import { ServiceNowRecord } from "@/lib/servicenow"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { ExternalLink } from "lucide-react"
 
 interface IncidentCardProps {
   incident: ServiceNowRecord
+  instanceUrl?: string
 }
 
-export function IncidentCard({ incident }: IncidentCardProps) {
+export function IncidentCard({ incident, instanceUrl }: IncidentCardProps) {
   const getPriorityVariant = (priority: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (priority?.toLowerCase()) {
       case '1':
@@ -59,12 +60,30 @@ export function IncidentCard({ incident }: IncidentCardProps) {
     })
   }
 
+  // Generate ServiceNow URL for the incident
+  const serviceNowUrl = instanceUrl && incident.sys_id 
+    ? `${instanceUrl}/nav_to.do?uri=incident.do?sys_id=${incident.sys_id}`
+    : null
+
   return (
     <Card className="hover:shadow-lg transition-shadow">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">
-            {incident.number || incident.sys_id}
+            {serviceNowUrl ? (
+              <a
+                href={serviceNowUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 group"
+                title="Open in ServiceNow"
+              >
+                {incident.number || incident.sys_id}
+                <ExternalLink className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </a>
+            ) : (
+              incident.number || incident.sys_id
+            )}
           </CardTitle>
           <div className="flex gap-2">
             {incident.priority && (
@@ -111,9 +130,17 @@ export function IncidentCard({ incident }: IncidentCardProps) {
         <span className="text-xs text-muted-foreground">
           ID: {incident.sys_id}
         </span>
-        <Button variant="ghost" size="sm">
-          View Details
-        </Button>
+        {serviceNowUrl && (
+          <a 
+            href={serviceNowUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+          >
+            View in ServiceNow
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
       </CardFooter>
     </Card>
   )

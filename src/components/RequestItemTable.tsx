@@ -3,14 +3,16 @@
 import { ServiceNowRecord } from "@/lib/servicenow"
 import { 
   User, 
-  FileText
+  FileText,
+  ExternalLink
 } from "lucide-react"
 
 interface RequestItemTableProps {
   requestItems: ServiceNowRecord[]
+  instanceUrl?: string
 }
 
-export function RequestItemTable({ requestItems }: RequestItemTableProps) {
+export function RequestItemTable({ requestItems, instanceUrl }: RequestItemTableProps) {
   const getPriorityBadge = (priority: string) => {
     const p = priority?.toLowerCase()
     if (p === '1' || p === 'critical') {
@@ -93,6 +95,12 @@ export function RequestItemTable({ requestItems }: RequestItemTableProps) {
     return formatDate(dateString)
   }
 
+  // Generate ServiceNow URL for a record
+  const getServiceNowUrl = (sysId: string) => {
+    if (!instanceUrl || !sysId) return null
+    return `${instanceUrl}/nav_to.do?uri=sc_req_item.do?sys_id=${sysId}`
+  }
+
   return (
     <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
@@ -133,58 +141,74 @@ export function RequestItemTable({ requestItems }: RequestItemTableProps) {
                 </td>
               </tr>
             ) : (
-              requestItems.map((item) => (
-                <tr 
-                  key={item.sys_id} 
-                  className="hover:bg-slate-50 transition-colors group"
-                >
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                      <span className="font-semibold text-sm text-slate-900">
-                        {String(item.number || item.sys_id)}
+              requestItems.map((item) => {
+                const serviceNowUrl = getServiceNowUrl(item.sys_id)
+                return (
+                  <tr 
+                    key={item.sys_id} 
+                    className="hover:bg-slate-50 transition-colors group"
+                  >
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                        {serviceNowUrl ? (
+                          <a
+                            href={serviceNowUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-semibold text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 group/link"
+                            title="Open in ServiceNow"
+                          >
+                            {String(item.number || item.sys_id)}
+                            <ExternalLink className="h-3 w-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                          </a>
+                        ) : (
+                          <span className="font-semibold text-sm text-slate-900">
+                            {String(item.number || item.sys_id)}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 max-w-md">
+                      <p className="text-sm text-slate-700 line-clamp-2">
+                        {String(item.short_description || item.description || 'No description')}
+                      </p>
+                    </td>
+                    <td className="px-4 py-4">
+                      {item.state && getStateBadge(String(item.state))}
+                    </td>
+                    <td className="px-4 py-4">
+                      {item.priority && getPriorityBadge(String(item.priority))}
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <User className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                        <span className="text-sm text-slate-700 truncate max-w-[150px]">
+                          {(item.requested_for as any)?.display_value || 
+                           (item.requested_for as any)?.value || 
+                           String(item.requested_for || 'N/A')}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span 
+                        className="text-sm text-slate-600"
+                        title={formatDate(item.created_on || '')}
+                      >
+                        {formatRelativeTime(item.created_on || '')}
                       </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 max-w-md">
-                    <p className="text-sm text-slate-700 line-clamp-2">
-                      {String(item.short_description || item.description || 'No description')}
-                    </p>
-                  </td>
-                  <td className="px-4 py-4">
-                    {item.state && getStateBadge(String(item.state))}
-                  </td>
-                  <td className="px-4 py-4">
-                    {item.priority && getPriorityBadge(String(item.priority))}
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-2">
-                      <User className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
-                      <span className="text-sm text-slate-700 truncate max-w-[150px]">
-                        {(item.requested_for as any)?.display_value || 
-                         (item.requested_for as any)?.value || 
-                         String(item.requested_for || 'N/A')}
+                    </td>
+                    <td className="px-4 py-4">
+                      <span 
+                        className="text-sm text-slate-600"
+                        title={formatDate(item.updated_on || '')}
+                      >
+                        {formatRelativeTime(item.updated_on || '')}
                       </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span 
-                      className="text-sm text-slate-600"
-                      title={formatDate(item.created_on || '')}
-                    >
-                      {formatRelativeTime(item.created_on || '')}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span 
-                      className="text-sm text-slate-600"
-                      title={formatDate(item.updated_on || '')}
-                    >
-                      {formatRelativeTime(item.updated_on || '')}
-                    </span>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                  </tr>
+                )
+              })
             )}
           </tbody>
         </table>
@@ -199,4 +223,3 @@ export function RequestItemTable({ requestItems }: RequestItemTableProps) {
     </div>
   )
 }
-

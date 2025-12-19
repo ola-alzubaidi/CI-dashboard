@@ -46,7 +46,8 @@ export async function GET(request: NextRequest) {
       ritms,
       total: ritms.length,
       limit: parseInt(limit),
-      offset: parseInt(offset)
+      offset: parseInt(offset),
+      instanceUrl: process.env.SERVICENOW_INSTANCE_URL || ''
     })
   } catch (error) {
     console.error('Error fetching RITMs:', error)

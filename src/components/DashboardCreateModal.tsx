@@ -15,9 +15,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { 
   LayoutDashboard, 
-  Sparkles
+  Sparkles,
+  Loader2
 } from 'lucide-react'
-import { createDashboard, updateDashboard } from '@/lib/dashboardStorage'
 import { DashboardConfig } from '@/types/dashboard'
 
 interface DashboardCreateModalProps {
@@ -39,6 +39,7 @@ export function DashboardCreateModal({
   })
 
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
   // Reset form when modal opens with a different dashboard
   React.useEffect(() => {
@@ -51,43 +52,58 @@ export function DashboardCreateModal({
     }
   }, [open, editDashboard])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
+    if (!formData.name.trim()) {
+      setError('Dashboard name is required')
+      return
+    }
+
+    setLoading(true)
+
     try {
-      if (!formData.name.trim()) {
-        setError('Dashboard name is required')
-        return
+      // Create dashboard in ServiceNow
+      const response = await fetch('/api/servicenow/dashboards/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          description: formData.description.trim()
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create dashboard')
       }
 
-      if (editDashboard) {
-        // Update existing dashboard
-        updateDashboard(editDashboard.id, {
-          name: formData.name,
-          description: formData.description,
-        })
-        onSuccess(editDashboard)
-      } else {
-        // Create new blank dashboard with default settings
-        const newDashboard = createDashboard({
-          name: formData.name,
-          description: formData.description,
-          type: 'custom', // Start as custom/blank
-          settings: {
-            limit: 50,
-            layout: 'grid',
-            filters: {},
-          }
-        })
-        onSuccess(newDashboard)
+      // Create the dashboard config to pass to onSuccess
+      const newDashboard: DashboardConfig = {
+        id: data.dashboard.sys_id,
+        name: data.dashboard.name,
+        description: data.dashboard.description || '',
+        type: 'custom',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isFromServiceNow: true,
+        serviceNowId: data.dashboard.sys_id,
+        settings: {
+          limit: 50,
+          layout: 'grid',
+          filters: {},
+        }
       }
 
-      // Reset form and close
+      onSuccess(newDashboard)
       resetForm()
       onOpenChange(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save dashboard')
+      setError(err instanceof Error ? err.message : 'Failed to create dashboard')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -117,7 +133,7 @@ export function DashboardCreateModal({
           <DialogDescription>
             {editDashboard 
               ? 'Update dashboard name and description'
-              : 'Create a blank dashboard. You can add widgets and customize it after creation.'
+              : 'Create a new dashboard in ServiceNow. You can add widgets and customize it after creation.'
             }
           </DialogDescription>
         </DialogHeader>
@@ -142,6 +158,7 @@ export function DashboardCreateModal({
                 className="h-10"
                 required
                 autoFocus
+                disabled={loading}
               />
             </div>
 
@@ -156,6 +173,7 @@ export function DashboardCreateModal({
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 className="w-full min-h-[100px] px-3 py-2 text-sm border rounded-md bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring"
                 rows={4}
+                disabled={loading}
               />
             </div>
 
@@ -165,10 +183,10 @@ export function DashboardCreateModal({
                   <Sparkles className="h-5 w-5 text-blue-600 mt-0.5" />
                   <div className="flex-1">
                     <h4 className="text-sm font-semibold text-blue-900 mb-1">
-                      Blank Dashboard
+                      ServiceNow Dashboard
                     </h4>
                     <p className="text-xs text-blue-700">
-                      Your new dashboard will be created empty. After creation, you can add widgets, configure data sources, set filters, and customize the layout directly within the dashboard.
+                      Your new dashboard will be created in ServiceNow. After creation, you can add widgets, configure data sources, and customize the layout.
                     </p>
                   </div>
                 </div>
@@ -181,15 +199,21 @@ export function DashboardCreateModal({
               type="button"
               variant="outline"
               onClick={handleCancel}
+              disabled={loading}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               className="bg-blue-600 hover:bg-blue-700"
+              disabled={loading}
             >
-              <LayoutDashboard className="h-4 w-4 mr-2" />
-              {editDashboard ? 'Update' : 'Create Dashboard'}
+              {loading ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <LayoutDashboard className="h-4 w-4 mr-2" />
+              )}
+              {loading ? 'Creating...' : (editDashboard ? 'Update' : 'Create Dashboard')}
             </Button>
           </DialogFooter>
         </form>

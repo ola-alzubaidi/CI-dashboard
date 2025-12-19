@@ -2,17 +2,29 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Widget } from '@/types/widget'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, ExternalLink } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 
 // Helper to safely get display value from ServiceNow fields
-// ServiceNow can return objects like {link: "...", value: "..."} for reference fields
 const getDisplayValue = (value: any): string => {
   if (value === null || value === undefined) return ''
   if (typeof value === 'object') {
     return value.display_value || value.value || value.name || ''
   }
   return String(value)
+}
+
+// Map data source to ServiceNow table name
+const getTableName = (dataSource: string): string => {
+  const tableMap: Record<string, string> = {
+    'sc_req_item': 'sc_req_item',
+    'incident': 'incident',
+    'change_request': 'change_request',
+    'problem': 'problem',
+    'task': 'task',
+    'sys_user': 'sys_user',
+  }
+  return tableMap[dataSource] || dataSource
 }
 
 interface TableWidgetProps {
@@ -52,6 +64,7 @@ export function TableWidget({ widget }: TableWidgetProps) {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [instanceUrl, setInstanceUrl] = useState<string>('')
 
   const layout = widget.layout || 'table'
 
@@ -66,8 +79,6 @@ export function TableWidget({ widget }: TableWidgetProps) {
         params.append('query', widget.filter)
       }
       
-      console.log(`[TableWidget] Fetching from /api/servicenow/${widget.dataSource}?${params}`)
-      
       const response = await fetch(`/api/servicenow/${widget.dataSource}?${params}`)
       
       if (!response.ok) {
@@ -79,11 +90,12 @@ export function TableWidget({ widget }: TableWidgetProps) {
       }
       
       const result = await response.json()
-      console.log(`[TableWidget] Received ${result.data?.length || 0} records from ${widget.dataSource}`)
       setData(result.data || [])
+      if (result.instanceUrl) {
+        setInstanceUrl(result.instanceUrl)
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load data'
-      console.error('[TableWidget] Error:', errorMessage)
       setError(errorMessage)
     } finally {
       setLoading(false)
@@ -93,6 +105,35 @@ export function TableWidget({ widget }: TableWidgetProps) {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  // Generate ServiceNow URL for a record
+  const getServiceNowUrl = (sysId: string) => {
+    if (!instanceUrl || !sysId) return null
+    const tableName = getTableName(widget.dataSource)
+    return `${instanceUrl}/nav_to.do?uri=${tableName}.do?sys_id=${sysId}`
+  }
+
+  // Linkable number component
+  const LinkableNumber = ({ row, idx }: { row: any; idx: number }) => {
+    const serviceNowUrl = getServiceNowUrl(row.sys_id)
+    const displayNumber = getDisplayValue(row.number) || `#${idx + 1}`
+    
+    if (serviceNowUrl) {
+      return (
+        <a
+          href={serviceNowUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1 group"
+          title="Open in ServiceNow"
+        >
+          {displayNumber}
+          <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+        </a>
+      )
+    }
+    return <span className="font-semibold text-blue-600">{displayNumber}</span>
+  }
 
   if (loading) {
     return (
@@ -144,7 +185,7 @@ export function TableWidget({ widget }: TableWidgetProps) {
             <Card key={row.sys_id || idx} className="hover:shadow-md transition-shadow">
               <CardContent className="p-4">
                 <div className="flex justify-between items-start mb-2">
-                  <span className="font-semibold text-blue-600">{getDisplayValue(row.number) || `#${idx + 1}`}</span>
+                  <LinkableNumber row={row} idx={idx} />
                   {row.priority && (
                     <span className={`text-xs px-2 py-0.5 rounded border ${getPriorityColor(getDisplayValue(row.priority))}`}>
                       P{getDisplayValue(row.priority)}
@@ -186,7 +227,7 @@ export function TableWidget({ widget }: TableWidgetProps) {
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-blue-600">{getDisplayValue(row.number) || `#${idx + 1}`}</span>
+                <LinkableNumber row={row} idx={idx} />
                 {row.priority && (
                   <span className={`text-xs px-1.5 py-0.5 rounded ${getPriorityColor(getDisplayValue(row.priority))}`}>
                     P{getDisplayValue(row.priority)}
@@ -218,7 +259,9 @@ export function TableWidget({ widget }: TableWidgetProps) {
             key={row.sys_id || idx} 
             className="flex items-center gap-2 py-1.5 px-2 hover:bg-slate-50 rounded text-sm"
           >
-            <span className="font-medium text-blue-600 w-24 flex-shrink-0">{getDisplayValue(row.number) || `#${idx + 1}`}</span>
+            <span className="w-24 flex-shrink-0">
+              <LinkableNumber row={row} idx={idx} />
+            </span>
             <span className="flex-1 truncate text-slate-600">{getDisplayValue(row.short_description) || '-'}</span>
             {row.state && (
               <span className={`text-xs px-1.5 py-0.5 rounded ${getStateColor(getDisplayValue(row.state))}`}>
@@ -256,7 +299,9 @@ export function TableWidget({ widget }: TableWidgetProps) {
                 const value = getDisplayValue(row[col])
                 return (
                   <td key={col} className="p-2 border-b border-slate-100 truncate max-w-[200px]">
-                    {col === 'priority' && value ? (
+                    {col === 'number' ? (
+                      <LinkableNumber row={row} idx={idx} />
+                    ) : col === 'priority' && value ? (
                       <span className={`text-xs px-2 py-0.5 rounded border ${getPriorityColor(value)}`}>
                         P{value}
                       </span>

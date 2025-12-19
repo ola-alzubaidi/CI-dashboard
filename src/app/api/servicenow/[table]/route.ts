@@ -50,6 +50,7 @@ export async function GET(
       data,
       total: data.length,
       table,
+      instanceUrl: process.env.SERVICENOW_INSTANCE_URL || ''
     })
   } catch (error) {
     const { table } = await params

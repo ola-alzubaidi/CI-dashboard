@@ -4,14 +4,16 @@ import { ServiceNowRecord } from "@/lib/servicenow"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { 
   User, 
-  FileText
+  FileText,
+  ExternalLink
 } from "lucide-react"
 
 interface RequestItemCardProps {
   requestItem: ServiceNowRecord
+  instanceUrl?: string
 }
 
-export function RequestItemCard({ requestItem }: RequestItemCardProps) {
+export function RequestItemCard({ requestItem, instanceUrl }: RequestItemCardProps) {
   const getPriorityConfig = (priority: string) => {
     const p = priority?.toLowerCase()
     if (p === '1' || p === 'critical') {
@@ -108,6 +110,10 @@ export function RequestItemCard({ requestItem }: RequestItemCardProps) {
     })
   }
 
+  // Generate ServiceNow URL for the record
+  const serviceNowUrl = instanceUrl && requestItem.sys_id 
+    ? `${instanceUrl}/nav_to.do?uri=sc_req_item.do?sys_id=${requestItem.sys_id}`
+    : null
   const priorityConfig = requestItem.priority ? getPriorityConfig(String(requestItem.priority)) : null
   const stateConfig = requestItem.state ? getStateConfig(String(requestItem.state)) : null
 
@@ -119,9 +125,22 @@ export function RequestItemCard({ requestItem }: RequestItemCardProps) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
               <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
-              <h3 className="font-bold text-base text-slate-900 truncate">
-                {String(requestItem.number || requestItem.sys_id)}
-              </h3>
+              {serviceNowUrl ? (
+                <a
+                  href={serviceNowUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-base text-blue-600 hover:text-blue-800 hover:underline truncate flex items-center gap-1 group/link"
+                  title="Open in ServiceNow"
+                >
+                  {String(requestItem.number || requestItem.sys_id)}
+                  <ExternalLink className="h-3 w-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                </a>
+              ) : (
+                <h3 className="font-bold text-base text-slate-900 truncate">
+                  {String(requestItem.number || requestItem.sys_id)}
+                </h3>
+              )}
             </div>
           </div>
           
@@ -202,4 +221,3 @@ export function RequestItemCard({ requestItem }: RequestItemCardProps) {
     </Card>
   )
 }
-

@@ -5,6 +5,9 @@ export interface DashboardConfig {
   type: 'ritms' | 'incidents' | 'users' | 'custom'
   createdAt: string
   updatedAt: string
+  isFavorite?: boolean
+  isFromServiceNow?: boolean
+  serviceNowId?: string
   settings: {
     limit?: number
     filters?: Record<string, string>

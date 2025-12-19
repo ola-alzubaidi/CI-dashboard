@@ -1,5 +1,7 @@
 import { type JWT } from "next-auth/jwt"
 
+const REDIRECT_URI = process.env.SERVICENOW_REDIRECT_URI || `${process.env.NEXTAUTH_URL}/api/auth/callback/servicenow`
+
 export const authOptions = {
   providers: [
     {
@@ -12,7 +14,7 @@ export const authOptions = {
         url: `${process.env.SERVICENOW_INSTANCE_URL}/oauth_auth.do`,
         params: {
           response_type: "code",
-          redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback/servicenow`,
+          redirect_uri: REDIRECT_URI,
         },
       },
       token: {
@@ -26,7 +28,7 @@ export const authOptions = {
             body: new URLSearchParams({
               grant_type: "authorization_code",
               code: params.code as string,
-              redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback/servicenow`,
+              redirect_uri: REDIRECT_URI,
               client_id: process.env.SERVICENOW_CLIENT_ID as string,
               client_secret: process.env.SERVICENOW_CLIENT_SECRET as string,
             }),
