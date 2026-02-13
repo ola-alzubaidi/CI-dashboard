@@ -295,29 +295,16 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
     return matchesSearch && state.phase === statusFilter
   })
 
-  // Escalated = Discovery RITMs with Pending state only; expand row = Enter IP for those
-  const pendingDiscoveryCount = discoveryItems.filter(r => isPending(r)).length
+  // Stats for summary cards
+  const pendingCount = requestItems.filter(r => isPending(r)).length
   const stats = {
     total: discoveryItems.length,
     open: requestItems.filter(r => stateStr(r).includes('open')).length,
-    pending: requestItems.filter(r => stateStr(r).includes('pending')).length,
+    pending: pendingCount,
     inProgress: requestItems.filter(r => stateStr(r).includes('progress')).length,
-    escalated: pendingDiscoveryCount,
+    escalated: pendingCount,
     completed: discoveryItems.filter(r => getState(extractSysId(r)).phase === 'completed').length
   }
-
-  // Debug logging
-  console.log('=== Discovery RITMs Debug ===')
-  console.log('Total Discovery Items:', discoveryItems.length)
-  discoveryItems.forEach(ritm => {
-    const ritmNum = getRitmNumber(ritm)
-    const state = getRitmState(ritm)
-    const stateLC = stateStr(ritm)
-    const isPend = isPending(ritm)
-    const hasProgress = stateLC.includes('progress')
-    const isDisc = isDiscoveryItem(ritm)
-    console.log(`${ritmNum}: isDiscovery=${isDisc} | State="${state}" | Pending=${isPend} | Progress=${hasProgress}`)
-  })
 
   return (
     <div className="space-y-4">
@@ -471,12 +458,12 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
                           <span className="text-sm text-slate-700">{getRitmState(ritm)}</span>
                         </td>
                         <td className="px-4 py-3">
-                          {isDiscovery ? (
-                            isPending(ritm) ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                                Escalated
-                              </span>
-                            ) : state.phase === 'new' || state.phase === 'escalation' ? (
+                          {isPending(ritm) ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                              Escalated
+                            </span>
+                          ) : isDiscovery ? (
+                            state.phase === 'new' || state.phase === 'escalation' ? (
                               <span className="text-xs text-slate-400">—</span>
                             ) : (
                               <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getPhaseColor(state.phase, getRitmNumber(ritm))}`}>
