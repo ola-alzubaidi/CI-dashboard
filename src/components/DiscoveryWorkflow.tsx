@@ -306,6 +306,19 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
     completed: discoveryItems.filter(r => getState(extractSysId(r)).phase === 'completed').length
   }
 
+  // Debug logging
+  console.log('=== Discovery RITMs Debug ===')
+  console.log('Total Discovery Items:', discoveryItems.length)
+  discoveryItems.forEach(ritm => {
+    const ritmNum = getRitmNumber(ritm)
+    const state = getRitmState(ritm)
+    const stateLC = stateStr(ritm)
+    const isPend = isPending(ritm)
+    const hasProgress = stateLC.includes('progress')
+    const isDisc = isDiscoveryItem(ritm)
+    console.log(`${ritmNum}: isDiscovery=${isDisc} | State="${state}" | Pending=${isPend} | Progress=${hasProgress}`)
+  })
+
   return (
     <div className="space-y-4">
       {/* Summary Cards */}
