@@ -422,7 +422,7 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
                   const state = getState(ritmId)
                   const url = getUrl(ritmId)
                   const isDiscovery = isDiscoveryItem(ritm)
-                  const showExpandAndEnterIp = isDiscovery && stateStr(ritm).includes('progress')
+                  const showExpandAndEnterIp = stateStr(ritm).includes('progress')
                   const isExpanded = expandedRows.has(ritmId)
 
                   return (
