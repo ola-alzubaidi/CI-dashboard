@@ -44,7 +44,7 @@ export async function GET() {
 
     // Discovery runs (recent) – discovery_status table
     try {
-      const { result: discoveryRuns } = await client.getTableData('discovery_status', {
+      const discoveryRuns = await client.getTableData('discovery_status', {
         sysparm_limit: 100,
         sysparm_fields: 'sys_id,sys_created_on,status',
         sysparm_order: 'sys_created_onDESC',
@@ -86,9 +86,10 @@ export async function GET() {
         sysparm_fields: 'sys_id,description,state,sys_created_on',
         sysparm_order: 'sys_created_onDESC',
       })
-      metrics.openEvents = totalCount ?? events?.length ?? 0
-      for (let i = 0; i < Math.min(2, events?.length ?? 0); i++) {
-        const e = events![i] as ServiceNowRecord & { description?: unknown; sys_created_on?: string }
+      const eventArray = events ?? []
+      metrics.openEvents = totalCount ?? eventArray.length
+      for (let i = 0; i < Math.min(2, eventArray.length); i++) {
+        const e = eventArray[i] as ServiceNowRecord & { description?: unknown; sys_created_on?: string }
         const created = e.sys_created_on ? new Date(e.sys_created_on) : new Date()
         recentOperations.push({
           id: `event-${e.sys_id}`,
