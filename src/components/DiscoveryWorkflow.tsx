@@ -308,9 +308,6 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-500">
-        <strong>Escalated</strong> = Discovery RITMs with status Pending. Use the <strong>chevron (▶)</strong> on rows with status "In Progress" or similar to expand and enter IP info.
-      </p>
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <div className="bg-white rounded-lg border p-4 shadow-sm">
