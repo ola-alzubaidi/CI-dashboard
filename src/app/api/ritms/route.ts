@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '50'
     const offset = searchParams.get('offset') || '0'
     const query = searchParams.get('query') || ''
-    const fields = searchParams.get('fields') || 'sys_id,number,short_description,state,priority,created_on,updated_on,requested_for,requested_by,description'
+    const fields = searchParams.get('fields') || 'sys_id,number,short_description,state,priority,created_on,updated_on,requested_for,requested_by,description,cat_item,cmdb_ci,assigned_to,sys_created_on,u_discovery_status,u_last_email_date,u_host_ip,u_network_type,u_notes'
 
     console.log('Creating ServiceNow client with OAuth:', !!accessToken)
     const servicenowClient = createServiceNowClient(accessToken || basicAuth, !!accessToken)
@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
       sysparm_offset: parseInt(offset),
       sysparm_query: query,
       sysparm_fields: fields,
+      sysparm_display_value: 'all',
     })
 
     console.log('RITMs fetched:', ritms?.length || 0)

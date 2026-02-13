@@ -99,13 +99,34 @@ export class ServiceNowClient {
     sysparm_offset?: number
     sysparm_query?: string
     sysparm_fields?: string
+    sysparm_order?: string
   }): Promise<ServiceNowRecord[]> {
     try {
-      const response = 
+      const response =
         await this.client.get(`/table/${tableName}`, { params })
       return (response.data as ServiceNowResponse<ServiceNowRecord>).result
     } catch (error) {
       // Error fetching data
+      throw error
+    }
+  }
+
+  // Get table data with total count from X-Total-Count header (for pagination/counts)
+  async getTableDataWithCount(tableName: string, params?: {
+    sysparm_limit?: number
+    sysparm_offset?: number
+    sysparm_query?: string
+    sysparm_fields?: string
+    sysparm_order?: string
+  }): Promise<{ result: ServiceNowRecord[]; totalCount: number | null }> {
+    try {
+      const response =
+        await this.client.get(`/table/${tableName}`, { params })
+      const result = (response.data as ServiceNowResponse<ServiceNowRecord>).result
+      const totalHeader = response.headers?.['x-total-count']
+      const totalCount = totalHeader != null ? parseInt(String(totalHeader), 10) : null
+      return { result, totalCount: Number.isNaN(totalCount) ? null : totalCount }
+    } catch (error) {
       throw error
     }
   }
@@ -162,6 +183,7 @@ export class ServiceNowClient {
     sysparm_offset?: number
     sysparm_query?: string
     sysparm_fields?: string
+    sysparm_display_value?: string
   }): Promise<ServiceNowRecord[]> {
     try {
       const response = 
