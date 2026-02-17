@@ -251,8 +251,13 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
 
   const handleSaveIP = () => {
     if (!ipModal || !ipInput.trim()) return
-    updateState(ipModal.ritmId, { hostIP: ipInput.trim(), networkType: ipNetworkType, notes: ipNotes.trim() || undefined })
-    persistToServiceNow(ipModal.ritmId, { u_host_ip: ipInput.trim(), u_network_type: ipNetworkType, u_notes: ipNotes.trim() || undefined })
+    updateState(ipModal.ritmId, { hostIP: ipInput.trim(), networkType: ipNetworkType, notes: ipNotes.trim() || undefined, phase: 'response_received' })
+    persistToServiceNow(ipModal.ritmId, { 
+      u_host_ip: ipInput.trim(), 
+      u_network_type: ipNetworkType, 
+      u_notes: ipNotes.trim() || undefined,
+      u_discovery_status: 'response_received'
+    })
     setIpModal(null)
     setExpandedRows(prev => new Set(prev).add(ipModal.ritmId))
   }
