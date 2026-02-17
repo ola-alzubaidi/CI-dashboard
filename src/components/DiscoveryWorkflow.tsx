@@ -57,7 +57,7 @@ const SCHEDULE = {
 export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkflowProps) {
   const [workflowStates, setWorkflowStates] = useState<Record<string, WorkflowState>>({})
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('discovery')
   const [demoMode, setDemoMode] = useState(false)
   const [ipModal, setIpModal] = useState<{ ritmId: string; ritm: ServiceNowRecord } | null>(null)
   const [ipInput, setIpInput] = useState('')
