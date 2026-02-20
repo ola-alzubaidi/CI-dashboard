@@ -75,6 +75,13 @@ export default function RITMsPage() {
     }
   }, [session, status, mounted, router])
 
+  // Auto-refresh RITMs when in Discovery view so new items appear without manual refresh
+  useEffect(() => {
+    if (!showDiscovery || !mounted) return
+    const interval = setInterval(() => fetchRITMs(), 45_000)
+    return () => clearInterval(interval)
+  }, [showDiscovery, mounted, fetchRITMs])
+
   if (!mounted || status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">

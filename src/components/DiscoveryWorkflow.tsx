@@ -35,6 +35,8 @@ interface WorkflowState {
   hostIP?: string
   networkType?: 'N' | 'F'
   notes?: string
+  devicesToDiscover?: string
+  midServers?: string
 }
 
 const PHASE_LABELS: Record<Phase, string> = {
@@ -54,6 +56,9 @@ const SCHEDULE = {
   email3ToEscalation: 3
 }
 
+const DEMO_AUTO_NOTES = 'Demo: auto response received after Email 3'
+const DEMO_AUTO_HOST_IP = '10.0.0.10'
+
 export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkflowProps) {
   const [workflowStates, setWorkflowStates] = useState<Record<string, WorkflowState>>({})
   const [searchTerm, setSearchTerm] = useState('')
@@ -61,9 +66,12 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
   const [demoMode, setDemoMode] = useState(false)
   const [ipModal, setIpModal] = useState<{ ritmId: string; ritm: ServiceNowRecord } | null>(null)
   const [ipInput, setIpInput] = useState('')
-  const [ipNetworkType, setIpNetworkType] = useState<'N' | 'F'>('N')
+  const [ipNetworkType, setIpNetworkType] = useState<'N' | 'F' | ''>('')
   const [ipNotes, setIpNotes] = useState('')
+  const [ipDevicesToDiscover, setIpDevicesToDiscover] = useState('')
+  const [ipMidServers, setIpMidServers] = useState('')
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
+  const [sendEmailLoading, setSendEmailLoading] = useState<string | null>(null)
 
   const extractSysId = (ritm: ServiceNowRecord): string => {
     const sysId = ritm.sys_id
@@ -115,45 +123,51 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
 
     requestItems.forEach(ritm => {
       const ritmSysId = extractSysId(ritm)
-      if (!workflowStates[ritmSysId]) {
-        const snStatus = getSnField(ritm, 'u_discovery_status')
-        const snLastEmail = getSnField(ritm, 'u_last_email_date')
-        const phaseFromSn = snStatus ? snStatusToPhase(snStatus) : null
+      const snStatus = getSnField(ritm, 'u_discovery_status')
+      const snLastEmail = getSnField(ritm, 'u_last_email_date')
+      const phaseFromSn = snStatus ? snStatusToPhase(snStatus) : null
 
-        if (demoMode && discoveryRitms.includes(ritm)) {
-          const idx = discoveryRitms.indexOf(ritm)
-          const past = new Date()
-          past.setDate(past.getDate() - 10)
-          if (idx === 0) {
-            newStates[ritmSysId] = { phase: 'response_received', startDate: past.toISOString() }
-          } else if (idx === 1) {
-            newStates[ritmSysId] = { phase: 'email_1', startDate: past.toISOString(), email1Date: past.toISOString() }
-          } else if (idx === 2) {
-            const past8 = new Date()
-            past8.setDate(past8.getDate() - 8)
-            newStates[ritmSysId] = { phase: 'email_2', startDate: past8.toISOString(), email1Date: new Date(past8.getTime() - 7 * 86400000).toISOString(), email2Date: past8.toISOString() }
-          } else {
-            newStates[ritmSysId] = { phase: 'new', startDate: ritm.sys_created_on ? String(ritm.sys_created_on) : new Date().toISOString() }
-          }
-        } else if (phaseFromSn && phaseFromSn !== 'new') {
-          const startDate = ritm.sys_created_on ? String(ritm.sys_created_on) : new Date().toISOString()
-          const lastDate = snLastEmail || undefined
-          const hostIP = getSnField(ritm, 'u_host_ip') || undefined
-          const networkType = (getSnField(ritm, 'u_network_type') === 'F' ? 'F' : 'N') as 'N' | 'F'
-          const notes = getSnField(ritm, 'u_notes') || undefined
-          newStates[ritmSysId] = {
-            phase: phaseFromSn,
-            startDate,
-            ...(phaseFromSn === 'email_1' && lastDate && { email1Date: lastDate }),
-            ...(phaseFromSn === 'email_2' && lastDate && { email2Date: lastDate }),
-            ...(phaseFromSn === 'email_3' && lastDate && { email3Date: lastDate }),
-            ...(hostIP && { hostIP }),
-            ...(networkType && { networkType }),
-            ...(notes && { notes })
-          }
+      let stateToSet: WorkflowState | null = null
+
+      if (demoMode && discoveryRitms.includes(ritm)) {
+        const idx = discoveryRitms.indexOf(ritm)
+        const past = new Date()
+        past.setDate(past.getDate() - 10)
+        if (idx === 0) {
+          stateToSet = { phase: 'response_received', startDate: past.toISOString() }
+        } else if (idx === 1) {
+          stateToSet = { phase: 'email_1', startDate: past.toISOString(), email1Date: past.toISOString() }
+        } else if (idx === 2) {
+          const past8 = new Date()
+          past8.setDate(past8.getDate() - 8)
+          stateToSet = { phase: 'email_2', startDate: past8.toISOString(), email1Date: new Date(past8.getTime() - 7 * 86400000).toISOString(), email2Date: past8.toISOString() }
         } else {
-          newStates[ritmSysId] = { phase: 'new', startDate: ritm.sys_created_on ? String(ritm.sys_created_on) : new Date().toISOString() }
+          stateToSet = { phase: 'new', startDate: ritm.sys_created_on ? String(ritm.sys_created_on) : new Date().toISOString() }
         }
+        } else if (phaseFromSn && phaseFromSn !== 'new') {
+        // Sync from ServiceNow when status has changed
+        const startDate = ritm.sys_created_on ? String(ritm.sys_created_on) : new Date().toISOString()
+        const lastDate = snLastEmail || undefined
+        const hostIP = getSnField(ritm, 'u_host_ip') || undefined
+        const networkTypeRaw = getSnField(ritm, 'u_network_type')
+        const networkType = (networkTypeRaw === 'N' || networkTypeRaw === 'F') ? (networkTypeRaw as 'N' | 'F') : undefined
+        const notes = getSnField(ritm, 'u_notes') || undefined
+        stateToSet = {
+          phase: phaseFromSn,
+          startDate,
+          ...(phaseFromSn === 'email_1' && lastDate && { email1Date: lastDate }),
+          ...(phaseFromSn === 'email_2' && lastDate && { email2Date: lastDate }),
+          ...(phaseFromSn === 'email_3' && lastDate && { email3Date: lastDate }),
+          ...(hostIP && { hostIP }),
+          ...(networkType && { networkType }),
+          ...(notes && { notes })
+        }
+      } else if (!workflowStates[ritmSysId]) {
+        stateToSet = { phase: 'new', startDate: ritm.sys_created_on ? String(ritm.sys_created_on) : new Date().toISOString() }
+      }
+
+      if (stateToSet) {
+        newStates[ritmSysId] = stateToSet
       }
     })
     if (Object.keys(newStates).length > 0) {
@@ -244,14 +258,28 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
     const ritmId = extractSysId(ritm)
     setIpModal({ ritmId, ritm })
     const state = getState(ritmId)
-    setIpInput(state.hostIP || '')
-    setIpNetworkType(state.networkType || 'N')
-    setIpNotes(state.notes || '')
+    const notes = state.notes?.trim() === DEMO_AUTO_NOTES ? '' : (state.notes || '')
+    const isDemoAuto = state.notes?.trim() === DEMO_AUTO_NOTES
+    const hostIP = isDemoAuto && state.hostIP === DEMO_AUTO_HOST_IP ? '' : (state.hostIP || '')
+    const netType = isDemoAuto ? '' : (state.networkType || '')
+
+    setIpInput(hostIP)
+    setIpNetworkType(netType === 'N' || netType === 'F' ? netType : '')
+    setIpNotes(notes)
+    setIpDevicesToDiscover(state.devicesToDiscover || '')
+    setIpMidServers(state.midServers || '')
   }
 
   const handleSaveIP = () => {
-    if (!ipModal || !ipInput.trim()) return
-    updateState(ipModal.ritmId, { hostIP: ipInput.trim(), networkType: ipNetworkType, notes: ipNotes.trim() || undefined, phase: 'response_received' })
+    if (!ipModal || !ipInput.trim() || !ipNetworkType) return
+    updateState(ipModal.ritmId, { 
+      hostIP: ipInput.trim(), 
+      networkType: ipNetworkType, 
+      notes: ipNotes.trim() || undefined, 
+      devicesToDiscover: ipDevicesToDiscover.trim() || undefined,
+      midServers: ipMidServers.trim() || undefined,
+      phase: 'response_received' 
+    })
     persistToServiceNow(ipModal.ritmId, { 
       u_host_ip: ipInput.trim(), 
       u_network_type: ipNetworkType, 
@@ -260,6 +288,29 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
     })
     setIpModal(null)
     setExpandedRows(prev => new Set(prev).add(ipModal.ritmId))
+  }
+
+  const handleSendEmail = async (ritmId: string, emailNum: 1 | 2 | 3) => {
+    setSendEmailLoading(ritmId)
+    try {
+      const res = await fetch(`/api/ritms/${ritmId}/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emailNum }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.details || data.error || 'Failed to send email')
+
+      const now = new Date().toISOString()
+      const phaseMap = { 1: 'email_1' as Phase, 2: 'email_2' as Phase, 3: 'email_3' as Phase }
+      const dateKey = emailNum === 1 ? 'email1Date' : emailNum === 2 ? 'email2Date' : 'email3Date'
+      updateState(ritmId, { phase: phaseMap[emailNum], [dateKey]: now })
+    } catch (e) {
+      console.error('Send email failed:', e)
+      alert(e instanceof Error ? e.message : 'Failed to send email')
+    } finally {
+      setSendEmailLoading(null)
+    }
   }
 
   const toggleRowExpanded = (ritmId: string) => {
@@ -286,6 +337,42 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
   const stateStr = (r: ServiceNowRecord) => getRitmState(r).trim().toLowerCase()
   const isPending = (r: ServiceNowRecord) => stateStr(r).includes('pending')
 
+  const parseServiceNowDateTimeMs = (raw: string | undefined): number | null => {
+    if (!raw) return null
+    const s = String(raw).trim()
+    if (!s) return null
+
+    // ISO or RFC formats
+    const ms = Date.parse(s)
+    if (!Number.isNaN(ms)) return ms
+
+    // ServiceNow display format often: "YYYY-MM-DD HH:mm:ss"
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/)
+    if (m) {
+      const y = Number(m[1])
+      const mo = Number(m[2]) - 1
+      const d = Number(m[3])
+      const hh = Number(m[4])
+      const mm = Number(m[5])
+      const ss = Number(m[6] ?? '0')
+      const t = new Date(y, mo, d, hh, mm, ss).getTime()
+      return Number.isNaN(t) ? null : t
+    }
+
+    return null
+  }
+
+  const getSortTimeMs = (ritm: ServiceNowRecord): number => {
+    const candidates = ['sys_updated_on', 'updated_on', 'sys_created_on', 'created_on']
+    for (const key of candidates) {
+      const raw = getSnField(ritm, key)
+      if (!raw) continue
+      const parsed = parseServiceNowDateTimeMs(raw)
+      if (parsed != null) return parsed
+    }
+    return 0
+  }
+
   const filteredRitms = requestItems.filter(ritm => {
     const matchesSearch = searchTerm === '' ||
       getRitmNumber(ritm).toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -298,7 +385,7 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
 
     const state = getState(extractSysId(ritm))
     return matchesSearch && state.phase === statusFilter
-  })
+  }).sort((a, b) => getSortTimeMs(b) - getSortTimeMs(a))
 
   // Stats for summary cards
   const pendingCount = requestItems.filter(r => isPending(r)).length
@@ -427,7 +514,7 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
                   const state = getState(ritmId)
                   const url = getUrl(ritmId)
                   const isDiscovery = isDiscoveryItem(ritm)
-                  const showExpandAndEnterIp = stateStr(ritm).includes('progress')
+                  const showExpandAndEnterIp = isDiscovery
                   const isExpanded = expandedRows.has(ritmId)
 
                   return (
@@ -463,21 +550,27 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
                           <span className="text-sm text-slate-700">{getRitmState(ritm)}</span>
                         </td>
                         <td className="px-4 py-3">
-                          {isPending(ritm) ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                              Escalated
-                            </span>
-                          ) : isDiscovery ? (
-                            state.phase === 'new' || state.phase === 'escalation' ? (
-                              <span className="text-xs text-slate-400">—</span>
-                            ) : (
-                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getPhaseColor(state.phase, getRitmNumber(ritm))}`}>
-                                {PHASE_LABELS[state.phase]}
+                          <div className="flex flex-col gap-1">
+                            {isDiscovery && state.phase === 'response_received' ? (
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getPhaseColor('response_received', getRitmNumber(ritm))}`}>
+                                {PHASE_LABELS.response_received}
                               </span>
-                            )
-                          ) : (
-                            <span className="text-xs text-slate-400">—</span>
-                          )}
+                            ) : isPending(ritm) ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                                Escalated
+                              </span>
+                            ) : isDiscovery ? (
+                              state.phase === 'new' || state.phase === 'escalation' ? (
+                                <span className="text-xs text-slate-400">—</span>
+                              ) : (
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${getPhaseColor(state.phase, getRitmNumber(ritm))}`}>
+                                  {PHASE_LABELS[state.phase]}
+                                </span>
+                              )
+                            ) : (
+                              <span className="text-xs text-slate-400">—</span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                       {showExpandAndEnterIp && isExpanded && (
@@ -486,23 +579,56 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
                           <td colSpan={5} className="px-4 py-3">
                             <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm">
                               <p className="font-medium text-slate-700 mb-2">Enter IP &amp; info</p>
-                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
                                 <div>
                                   <span className="text-slate-500">Host IP</span>
-                                  <p className="font-mono font-medium">{state.hostIP || '—'}</p>
+                                  <p className="font-mono font-medium">
+                                    {state.notes?.trim() === DEMO_AUTO_NOTES && state.hostIP === DEMO_AUTO_HOST_IP ? '—' : (state.hostIP || '—')}
+                                  </p>
                                 </div>
                                 <div>
                                   <span className="text-slate-500">Network type</span>
-                                  <p className="font-medium">{state.networkType === 'N' ? 'N' : state.networkType === 'F' ? 'F' : '—'}</p>
+                                  <p className="font-medium">
+                                    {state.notes?.trim() === DEMO_AUTO_NOTES ? '—' : (state.networkType === 'N' ? 'N' : state.networkType === 'F' ? 'F' : '—')}
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className="text-slate-500">Devices to discover</span>
+                                  <p className="font-medium">{state.devicesToDiscover || '—'}</p>
+                                </div>
+                                <div>
+                                  <span className="text-slate-500">MID servers</span>
+                                  <p className="font-medium">{state.midServers || '—'}</p>
                                 </div>
                                 <div>
                                   <span className="text-slate-500">Notes</span>
-                                  <p className="font-medium">{state.notes || '—'}</p>
+                                  <p className="font-medium">
+                                    {state.notes?.trim() === DEMO_AUTO_NOTES ? '—' : (state.notes || '—')}
+                                  </p>
                                 </div>
                               </div>
-                              <Button size="sm" variant="outline" onClick={() => handleOpenIpModal(ritm)} className="mt-2 text-xs">
-                                <Network className="h-3 w-3 mr-1" /> Enter IP / Edit info
-                              </Button>
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {isDiscovery && ['new', 'email_1', 'email_2'].includes(state.phase) && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleSendEmail(ritmId, state.phase === 'new' ? 1 : state.phase === 'email_1' ? 2 : 3)}
+                                    disabled={sendEmailLoading === ritmId}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
+                                  >
+                                    {sendEmailLoading === ritmId ? (
+                                      <>Sending...</>
+                                    ) : (
+                                      <>
+                                        <Mail className="h-3 w-3 mr-1" />
+                                        Send Email {state.phase === 'new' ? 1 : state.phase === 'email_1' ? 2 : 3}
+                                      </>
+                                    )}
+                                  </Button>
+                                )}
+                                <Button size="sm" variant="outline" onClick={() => handleOpenIpModal(ritm)} className="text-xs">
+                                  <Network className="h-3 w-3 mr-1" /> Enter IP / Edit info
+                                </Button>
+                              </div>
                             </div>
                           </td>
                         </tr>
@@ -529,6 +655,28 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
             </h3>
             <p className="text-sm text-slate-600 mb-4">{getRitmNumber(ipModal.ritm)}</p>
             <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Devices to discover</label>
+                  <input
+                    type="text"
+                    value={ipDevicesToDiscover}
+                    onChange={(e) => setIpDevicesToDiscover(e.target.value)}
+                    placeholder="Enter a number"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">MID servers</label>
+                  <input
+                    type="text"
+                    value={ipMidServers}
+                    onChange={(e) => setIpMidServers(e.target.value)}
+                    placeholder="Enter a number"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Host IP Address</label>
                 <input
@@ -565,7 +713,7 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <Button variant="outline" onClick={() => setIpModal(null)}>Cancel</Button>
-              <Button onClick={handleSaveIP} disabled={!ipInput.trim()} className="bg-indigo-600 hover:bg-indigo-700">
+              <Button onClick={handleSaveIP} disabled={!ipInput.trim() || !ipNetworkType} className="bg-indigo-600 hover:bg-indigo-700">
                 Save IP
               </Button>
             </div>

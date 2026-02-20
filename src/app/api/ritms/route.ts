@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
       sysparm_query: query,
       sysparm_fields: fields,
       sysparm_display_value: 'all',
+      sysparm_order: '-sys_created_on', // Newest first so new items appear at top
     })
 
     console.log('RITMs fetched:', ritms?.length || 0)

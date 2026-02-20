@@ -177,6 +177,32 @@ export class ServiceNowClient {
     }
   }
 
+  // Send email via ServiceNow Email REST API (appears in System > Email > Outbound)
+  async sendEmail(params: {
+    to: string[]
+    subject: string
+    text: string
+    html?: string
+    tableName?: string
+    tableRecordId?: string
+  }): Promise<{ result?: { sys_id: string } }> {
+    try {
+      const body: Record<string, unknown> = {
+        to: params.to,
+        subject: params.subject,
+        text: params.text,
+      }
+      if (params.html) body.html = params.html
+      if (params.tableName) body.table_name = params.tableName
+      if (params.tableRecordId) body.table_record_id = params.tableRecordId
+
+      const response = await this.client.post('/email', body)
+      return response.data as { result?: { sys_id: string } }
+    } catch (error) {
+      throw error
+    }
+  }
+
   // Get request items (sc_req_item table)
   async getRequestItems(params?: {
     sysparm_limit?: number
@@ -184,6 +210,7 @@ export class ServiceNowClient {
     sysparm_query?: string
     sysparm_fields?: string
     sysparm_display_value?: string
+    sysparm_order?: string
   }): Promise<ServiceNowRecord[]> {
     try {
       const response = 

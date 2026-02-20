@@ -42,6 +42,7 @@ export async function GET(
     const data = await servicenowClient.getTableData(table, {
       sysparm_limit: parseInt(limit),
       sysparm_query: query,
+      sysparm_order: '-sys_created_on', // Newest first so new items appear at top
     })
 
     console.log(`[API] Fetched ${data.length} records from ${table}`)

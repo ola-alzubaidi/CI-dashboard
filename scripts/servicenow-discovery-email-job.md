@@ -114,3 +114,23 @@ function escalateRITM(ritm) {
 - When the **job** updates those fields, the app shows the correct step and due dates.
 - When a **customer responds**, click **Got response** in the app → sets `response_received` and the job will skip further emails for that RITM.
 - Then click **Schedule TEM / Complete** in the app to move to completed.
+
+---
+
+## Send Email from the App (ServiceNow Email REST API)
+
+The app can send discovery emails directly via ServiceNow's Email REST API. Emails appear in **System > Email > Outbound** (or Email Log).
+
+### Prerequisites
+
+1. **email_api_send role**: The ServiceNow user (OAuth or Basic Auth) must have the `email_api_send` role.
+   - Go to **User Administration > Users** → open the user → **Roles** tab → add `email_api_send`.
+
+2. **Outbound email configured**: System Properties > Email > Outbound must be set up (SMTP server, etc.).
+
+### Usage
+
+1. Open the Discovery view in the app.
+2. Expand a Discovery RITM row (click the chevron).
+3. Click **Send Email 1**, **Send Email 2**, or **Send Email 3** depending on the current phase.
+4. The email is sent via ServiceNow and linked to the RITM. View it in **System > Email > Outbound**.

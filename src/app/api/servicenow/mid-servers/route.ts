@@ -31,7 +31,20 @@ export async function GET(request: NextRequest) {
       query += `^nameLIKE${name}`
     }
 
-    // Query ecc_agent table (MID servers)
+    // Get total count (best-effort: uses X-Total-Count when available)
+    let totalCount: number | null = null
+    try {
+      const countRes = await (servicenowClient as any).getTableDataWithCount?.('ecc_agent', {
+        sysparm_query: query,
+        sysparm_fields: 'sys_id',
+        sysparm_limit: 1,
+      })
+      totalCount = countRes?.totalCount ?? null
+    } catch {
+      totalCount = null
+    }
+
+    // Query ecc_agent table (MID servers) for details
     const midServers = await servicenowClient.getTableData('ecc_agent', {
       sysparm_query: query,
       sysparm_fields: 'sys_id,name,status,host_name,ip,version,last_refreshed,validated',
@@ -41,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ 
       midServers,
-      total: midServers.length
+      total: totalCount ?? midServers.length
     })
   } catch (error) {
     console.error('Error fetching MID servers:', error)
