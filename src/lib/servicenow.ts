@@ -49,14 +49,9 @@ export class ServiceNowClient {
     sysparm_query?: string
     sysparm_fields?: string
   }): Promise<ServiceNowRecord[]> {
-    try {
-      const response = 
-        await this.client.get('/table/incident', { params })
-      return (response.data as ServiceNowResponse<ServiceNowRecord>).result
-    } catch (error) {
-      // Error fetching incidents
-      throw error
-    }
+    const response =
+      await this.client.get('/table/incident', { params })
+    return (response.data as ServiceNowResponse<ServiceNowRecord>).result
   }
 
   // Get users
@@ -66,14 +61,9 @@ export class ServiceNowClient {
     sysparm_query?: string
     sysparm_fields?: string
   }): Promise<ServiceNowRecord[]> {
-    try {
-      const response = 
-        await this.client.get('/table/sys_user', { params })
-      return (response.data as ServiceNowResponse<ServiceNowRecord>).result
-    } catch (error) {
-      // Error fetching users
-      throw error
-    }
+    const response =
+      await this.client.get('/table/sys_user', { params })
+    return (response.data as ServiceNowResponse<ServiceNowRecord>).result
   }
 
   // Get change requests
@@ -83,14 +73,9 @@ export class ServiceNowClient {
     sysparm_query?: string
     sysparm_fields?: string
   }): Promise<ServiceNowRecord[]> {
-    try {
-      const response = 
-        await this.client.get('/table/change_request', { params })
-      return (response.data as ServiceNowResponse<ServiceNowRecord>).result
-    } catch (error) {
-      // Error fetching change requests
-      throw error
-    }
+    const response =
+      await this.client.get('/table/change_request', { params })
+    return (response.data as ServiceNowResponse<ServiceNowRecord>).result
   }
 
   // Get any table data
@@ -101,14 +86,9 @@ export class ServiceNowClient {
     sysparm_fields?: string
     sysparm_order?: string
   }): Promise<ServiceNowRecord[]> {
-    try {
-      const response =
-        await this.client.get(`/table/${tableName}`, { params })
-      return (response.data as ServiceNowResponse<ServiceNowRecord>).result
-    } catch (error) {
-      // Error fetching data
-      throw error
-    }
+    const response =
+      await this.client.get(`/table/${tableName}`, { params })
+    return (response.data as ServiceNowResponse<ServiceNowRecord>).result
   }
 
   // Get table data with total count from X-Total-Count header (for pagination/counts)
@@ -119,62 +99,38 @@ export class ServiceNowClient {
     sysparm_fields?: string
     sysparm_order?: string
   }): Promise<{ result: ServiceNowRecord[]; totalCount: number | null }> {
-    try {
-      const response =
-        await this.client.get(`/table/${tableName}`, { params })
-      const result = (response.data as ServiceNowResponse<ServiceNowRecord>).result
-      const totalHeader = response.headers?.['x-total-count']
-      const totalCount = totalHeader != null ? parseInt(String(totalHeader), 10) : null
-      return { result, totalCount: Number.isNaN(totalCount) ? null : totalCount }
-    } catch (error) {
-      throw error
-    }
+    const response =
+      await this.client.get(`/table/${tableName}`, { params })
+    const result = (response.data as ServiceNowResponse<ServiceNowRecord>).result
+    const totalHeader = response.headers?.['x-total-count']
+    const totalCount = totalHeader != null ? parseInt(String(totalHeader), 10) : null
+    return { result, totalCount: Number.isNaN(totalCount) ? null : totalCount }
   }
 
   // Create a record
   async createRecord(tableName: string, data: Partial<ServiceNowRecord>): Promise<ServiceNowRecord> {
-    try {
-      const response = 
-        await this.client.post(`/table/${tableName}`, data)
-      return (response.data as { result: ServiceNowRecord }).result
-    } catch (error) {
-      // Error creating record
-      throw error
-    }
+    const response =
+      await this.client.post(`/table/${tableName}`, data)
+    return (response.data as { result: ServiceNowRecord }).result
   }
 
   // Update a record
   async updateRecord(tableName: string, sysId: string, data: Partial<ServiceNowRecord>): Promise<ServiceNowRecord> {
-    try {
-      const response = 
-        await this.client.patch(`/table/${tableName}/${sysId}`, data)
-      return (response.data as { result: ServiceNowRecord }).result
-    } catch (error) {
-      // Error updating record
-      throw error
-    }
+    const response =
+      await this.client.patch(`/table/${tableName}/${sysId}`, data)
+    return (response.data as { result: ServiceNowRecord }).result
   }
 
   // Delete a record
   async deleteRecord(tableName: string, sysId: string): Promise<void> {
-    try {
-      await this.client.delete(`/table/${tableName}/${sysId}`)
-    } catch (error) {
-      // Error deleting record
-      throw error
-    }
+    await this.client.delete(`/table/${tableName}/${sysId}`)
   }
 
   // Get user profile
   async getUserProfile(): Promise<ServiceNowRecord> {
-    try {
-      const response = 
-        await this.client.get('/now/user/profile')
-      return (response.data as { result: ServiceNowRecord }).result
-    } catch (error) {
-      // Error fetching user profile
-      throw error
-    }
+    const response =
+      await this.client.get('/now/user/profile')
+    return (response.data as { result: ServiceNowRecord }).result
   }
 
   // Send email via ServiceNow Email REST API (appears in System > Email > Outbound)
@@ -186,21 +142,17 @@ export class ServiceNowClient {
     tableName?: string
     tableRecordId?: string
   }): Promise<{ result?: { sys_id: string } }> {
-    try {
-      const body: Record<string, unknown> = {
-        to: params.to,
-        subject: params.subject,
-        text: params.text,
-      }
-      if (params.html) body.html = params.html
-      if (params.tableName) body.table_name = params.tableName
-      if (params.tableRecordId) body.table_record_id = params.tableRecordId
-
-      const response = await this.client.post('/email', body)
-      return response.data as { result?: { sys_id: string } }
-    } catch (error) {
-      throw error
+    const body: Record<string, unknown> = {
+      to: params.to,
+      subject: params.subject,
+      text: params.text,
     }
+    if (params.html) body.html = params.html
+    if (params.tableName) body.table_name = params.tableName
+    if (params.tableRecordId) body.table_record_id = params.tableRecordId
+
+    const response = await this.client.post('/email', body)
+    return response.data as { result?: { sys_id: string } }
   }
 
   // Get request items (sc_req_item table)
@@ -212,14 +164,9 @@ export class ServiceNowClient {
     sysparm_display_value?: string
     sysparm_order?: string
   }): Promise<ServiceNowRecord[]> {
-    try {
-      const response = 
-        await this.client.get('/table/sc_req_item', { params })
-      return (response.data as ServiceNowResponse<ServiceNowRecord>).result
-    } catch (error) {
-      // Error fetching request items
-      throw error
-    }
+    const response =
+      await this.client.get('/table/sc_req_item', { params })
+    return (response.data as ServiceNowResponse<ServiceNowRecord>).result
   }
 }
 

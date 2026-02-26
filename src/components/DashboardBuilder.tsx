@@ -162,7 +162,7 @@ export function DashboardBuilder({ dashboard }: DashboardBuilderProps) {
           url: shareUrl,
         })
         return
-      } catch (err) {
+      } catch {
         // User cancelled or share failed, fall back to clipboard
       }
     }

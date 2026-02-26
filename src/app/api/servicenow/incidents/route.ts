@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       incidents,
       instanceUrl: process.env.SERVICENOW_INSTANCE_URL || ''
     })
-  } catch (error) {
+  } catch {
     // Error fetching incidents
     return NextResponse.json(
       { error: 'Failed to fetch incidents' },

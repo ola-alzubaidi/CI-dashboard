@@ -8,18 +8,10 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
-    console.log('Session in RITM API:', JSON.stringify(session, null, 2))
-    
-    // Support both OAuth (accessToken) and Basic Auth (basicAuth)
     const accessToken = (session as any)?.accessToken
     const basicAuth = (session as any)?.basicAuth
-    
-    console.log('Has accessToken:', !!accessToken)
-    console.log('Has basicAuth:', !!basicAuth)
-    
+
     if (!accessToken && !basicAuth) {
-      console.log('No auth token found!')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -29,10 +21,7 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('query') || ''
     const fields = searchParams.get('fields') || 'sys_id,number,short_description,state,priority,created_on,updated_on,requested_for,requested_by,description,cat_item,cmdb_ci,assigned_to,sys_created_on,u_discovery_status,u_last_email_date,u_host_ip,u_network_type,u_notes'
 
-    console.log('Creating ServiceNow client with OAuth:', !!accessToken)
     const servicenowClient = createServiceNowClient(accessToken || basicAuth, !!accessToken)
-    
-    console.log('Fetching RITMs...')
     const ritms = await servicenowClient.getRequestItems({
       sysparm_limit: parseInt(limit),
       sysparm_offset: parseInt(offset),
@@ -41,8 +30,6 @@ export async function GET(request: NextRequest) {
       sysparm_display_value: 'all',
       sysparm_order: '-sys_created_on', // Newest first so new items appear at top
     })
-
-    console.log('RITMs fetched:', ritms?.length || 0)
 
     return NextResponse.json({ 
       ritms,

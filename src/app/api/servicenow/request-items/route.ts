@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       requestItems,
       instanceUrl: process.env.SERVICENOW_INSTANCE_URL || ''
     })
-  } catch (error) {
+  } catch {
     // Error fetching request items
     return NextResponse.json(
       { error: 'Failed to fetch request items' },

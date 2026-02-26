@@ -224,6 +224,9 @@ export function DashboardSidebar({ onDashboardChange }: DashboardSidebarProps) {
 
       {/* Dashboard List */}
       <div className="flex-1 overflow-y-auto bg-slate-900">
+        {loading && (
+          <div className="p-3 text-slate-500 text-sm">Loading dashboards...</div>
+        )}
         {sortedDashboards.map((dashboard) => {
           const isActive = activeDashboardId === dashboard.id
           const isMenuOpen = openMenuId === dashboard.id

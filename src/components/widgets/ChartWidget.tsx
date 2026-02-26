@@ -52,9 +52,7 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
       if (widget.filter) {
         params.append('query', widget.filter)
       }
-      
-      console.log(`[ChartWidget] Fetching from /api/servicenow/${widget.dataSource}?${params}`)
-      
+
       const response = await fetch(`/api/servicenow/${widget.dataSource}?${params}`)
       
       if (!response.ok) {
@@ -66,8 +64,6 @@ export function ChartWidget({ widget }: ChartWidgetProps) {
       }
       
       const result = await response.json()
-      console.log(`[ChartWidget] Received ${result.data?.length || 0} records from ${widget.dataSource}`)
-      
       const records = result.data || []
 
       // Group data by the selected field

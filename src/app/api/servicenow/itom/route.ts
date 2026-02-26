@@ -125,7 +125,7 @@ export async function GET() {
 
     // Sort by newest first and take top 5
     recentOperations.sort((a, b) => b.createdAt - a.createdAt)
-    const topOperations = recentOperations.slice(0, 5).map(({ createdAt, ...op }) => op)
+    const topOperations = recentOperations.slice(0, 5).map(({ createdAt: _createdAt, ...op }) => op)
 
     return NextResponse.json({
       metrics,

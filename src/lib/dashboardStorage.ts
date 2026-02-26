@@ -39,7 +39,7 @@ export function getDashboards(): DashboardStore {
       return initialStore
     }
     return JSON.parse(stored)
-  } catch (error) {
+  } catch {
     // Error loading dashboards
     return {
       dashboards: [DEFAULT_DASHBOARD],
@@ -53,7 +53,7 @@ export function saveDashboards(store: DashboardStore): void {
   
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(store))
-  } catch (error) {
+  } catch {
     // Error saving dashboards
   }
 }

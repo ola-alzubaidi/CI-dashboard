@@ -12,7 +12,6 @@ import { Input } from '@/components/ui/input'
 import { 
   BarChart3, 
   Table2, 
-  Hash, 
   List,
   PieChart,
   Activity,

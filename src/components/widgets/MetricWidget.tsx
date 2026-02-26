@@ -23,9 +23,7 @@ export function MetricWidget({ widget }: MetricWidgetProps) {
       if (widget.filter) {
         params.append('query', widget.filter)
       }
-      
-      console.log(`[MetricWidget] Fetching from /api/servicenow/${widget.dataSource}?${params}`)
-      
+
       const response = await fetch(`/api/servicenow/${widget.dataSource}?${params}`)
       
       if (!response.ok) {
@@ -37,7 +35,6 @@ export function MetricWidget({ widget }: MetricWidgetProps) {
       }
       
       const result = await response.json()
-      console.log(`[MetricWidget] Received ${result.data?.length || 0} records from ${widget.dataSource}`)
       const records = result.data || []
       setCount(records.length)
     } catch (err) {

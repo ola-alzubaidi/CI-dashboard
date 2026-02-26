@@ -18,7 +18,7 @@ export async function GET() {
     const profile = await servicenowClient.getUserProfile()
 
     return NextResponse.json({ profile })
-  } catch (error) {
+  } catch {
     // Error fetching user profile
     return NextResponse.json(
       { error: 'Failed to fetch user profile' },

@@ -2,6 +2,8 @@
 
 Run this **on the ServiceNow side** to automatically send Email 1, 2, and 3 on schedule (7 days, 7 days, 3 days), and escalate when no response.
 
+**Order of operations:** The script **sends the email first**, then sets **u_discovery_status** to email_1_sent (or email_2_sent / email_3_sent). So the discovery status changes to "email 1 sent" only after the email has been sent.
+
 ## Prerequisites
 
 1. On **sc_req_item** table, create:
@@ -19,6 +21,7 @@ Run this **on the ServiceNow side** to automatically send Email 1, 2, and 3 on s
 ```javascript
 // Discovery RITM Email Automation
 // Schedule: Email 1 → 7 days → Email 2 → 7 days → Email 3 → 3 days → Escalation
+// Order: SEND EMAIL FIRST, then set u_discovery_status (so status = "email 1 sent" only after email is sent)
 // If u_discovery_status = response_received, skip (customer already responded)
 
 var DISCOVERY_CAT_ITEM = 'Initiate Discovery process'; // Match your catalog item name
@@ -50,6 +53,7 @@ while (gr.next()) {
         sendDiscoveryEmail(gr, 1);
         gr.setValue('u_discovery_status', 'email_1_sent');
         gr.setValue('u_last_email_date', now.getDisplayValue());
+        setWorkInProgress(gr);
         gr.update();
     } else if (status == 'email_1_sent' && daysSince >= SCHEDULE.email1ToEmail2) {
         sendDiscoveryEmail(gr, 2);
@@ -65,6 +69,16 @@ while (gr.next()) {
         escalateRITM(gr);
         gr.setValue('u_discovery_status', 'escalated');
         gr.update();
+    }
+}
+
+function setWorkInProgress(ritm) {
+    var grState = new GlideRecord('sc_request_state');
+    grState.addQuery('label', 'CONTAINS', 'Work in Progress');
+    grState.addOrCondition('label', 'CONTAINS', 'In Progress');
+    grState.query();
+    if (grState.next()) {
+        ritm.setValue('state', grState.getUniqueValue());
     }
 }
 
@@ -112,8 +126,8 @@ function escalateRITM(ritm) {
 
 - The **app** reads `u_discovery_status` and `u_last_email_date` from ServiceNow.
 - When the **job** updates those fields, the app shows the correct step and due dates.
-- When a **customer responds**, click **Got response** in the app → sets `response_received` and the job will skip further emails for that RITM.
-- Then click **Schedule TEM / Complete** in the app to move to completed.
+- **How we record “response received”:** ServiceNow does not auto-detect email replies. When the service provider responds (by any channel), a person records it: in the app, expand the RITM → **Enter IP / Edit info** → fill Host IP (and optional notes) → **Save IP**. That sets `u_discovery_status = response_received` so the job stops and does not escalate. Optionally you can set up Inbound Email + Flow in ServiceNow to set `response_received` when a reply email is received (see docs/DISCOVERY_WORKFLOW.md).
+- Then use the app or ServiceNow to move to completed when done.
 
 ---
 

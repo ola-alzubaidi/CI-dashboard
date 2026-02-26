@@ -12,7 +12,6 @@ import {
   Search,
   Filter,
   AlertTriangle,
-  AlertCircle,
   Network,
   ChevronDown,
   ChevronRight
@@ -49,13 +48,6 @@ const PHASE_LABELS: Record<Phase, string> = {
   completed: 'Completed'
 }
 
-// Automation schedule (days)
-const SCHEDULE = {
-  email1ToEmail2: 7,
-  email2ToEmail3: 7,
-  email3ToEscalation: 3
-}
-
 const DEMO_AUTO_NOTES = 'Demo: auto response received after Email 3'
 const DEMO_AUTO_HOST_IP = '10.0.0.10'
 
@@ -63,7 +55,7 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
   const [workflowStates, setWorkflowStates] = useState<Record<string, WorkflowState>>({})
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('discovery')
-  const [demoMode, setDemoMode] = useState(false)
+  const [demoMode] = useState(false)
   const [ipModal, setIpModal] = useState<{ ritmId: string; ritm: ServiceNowRecord } | null>(null)
   const [ipInput, setIpInput] = useState('')
   const [ipNetworkType, setIpNetworkType] = useState<'N' | 'F' | ''>('')
@@ -108,8 +100,8 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
-    } catch (e) {
-      console.warn('Failed to persist RITM to ServiceNow:', e)
+    } catch {
+      // RITM update failed; UI state may be out of sync with ServiceNow
     }
   }
 
@@ -184,51 +176,6 @@ export function DiscoveryWorkflow({ requestItems, instanceUrl }: DiscoveryWorkfl
       ...prev,
       [ritmId]: { ...getState(ritmId), ...updates }
     }))
-  }
-
-  // Automation: next action due date and overdue
-  const getActionDueInfo = (ritm: ServiceNowRecord): { dueDate: Date | null; daysOverdue: number; nextAction: string } => {
-    const state = getState(extractSysId(ritm))
-    const now = new Date()
-
-    switch (state.phase) {
-      case 'new':
-        return { dueDate: new Date(state.startDate), daysOverdue: 0, nextAction: 'Send Email 1' }
-      case 'email_1':
-        if (state.email1Date) {
-          const dueDate = new Date(state.email1Date)
-          dueDate.setDate(dueDate.getDate() + SCHEDULE.email1ToEmail2)
-          const daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
-          return { dueDate, daysOverdue: Math.max(0, daysOverdue), nextAction: 'Send Email 2' }
-        }
-        return { dueDate: null, daysOverdue: 0, nextAction: 'Send Email 2' }
-      case 'email_2':
-        if (state.email2Date) {
-          const dueDate = new Date(state.email2Date)
-          dueDate.setDate(dueDate.getDate() + SCHEDULE.email2ToEmail3)
-          const daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
-          return { dueDate, daysOverdue: Math.max(0, daysOverdue), nextAction: 'Send Email 3' }
-        }
-        return { dueDate: null, daysOverdue: 0, nextAction: 'Send Email 3' }
-      case 'email_3':
-        if (state.email3Date) {
-          const dueDate = new Date(state.email3Date)
-          dueDate.setDate(dueDate.getDate() + SCHEDULE.email3ToEscalation)
-          const daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
-          return { dueDate, daysOverdue: Math.max(0, daysOverdue), nextAction: 'Escalate' }
-        }
-        return { dueDate: null, daysOverdue: 0, nextAction: 'Escalate' }
-      case 'response_received':
-        return { dueDate: null, daysOverdue: 0, nextAction: 'Schedule TEM / Complete' }
-      default:
-        return { dueDate: null, daysOverdue: 0, nextAction: '' }
-    }
-  }
-
-  const isOverdue = (ritm: ServiceNowRecord): boolean => {
-    if (!isDiscoveryItem(ritm)) return false
-    const { daysOverdue } = getActionDueInfo(ritm)
-    return daysOverdue > 0
   }
 
   const getFieldValue = (field: unknown): string => {

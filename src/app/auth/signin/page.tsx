@@ -35,7 +35,7 @@ export default function SignIn() {
       await signIn('servicenow', { 
         callbackUrl: '/ritms'
       })
-    } catch (error) {
+    } catch {
       setError("An error occurred during sign in")
       setLoading(false)
     }

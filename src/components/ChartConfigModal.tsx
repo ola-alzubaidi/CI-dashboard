@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -45,7 +45,7 @@ export function ChartConfigModal({
     }
   }, [open, config])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     onSave({ title, groupBy })
     onOpenChange(false)

@@ -36,8 +36,6 @@ export async function GET() {
     }
 
     // Fetch from par_dashboard - Platform Analytics Redesigned dashboards
-    console.log('[Dashboard API] Fetching from par_dashboard...')
-    
     const response = await axios.get(`${instanceUrl}/api/now/table/par_dashboard`, {
       headers,
       params: {
@@ -48,7 +46,6 @@ export async function GET() {
     })
 
     const dashboards = response.data?.result || []
-    console.log(`[Dashboard API] Found ${dashboards.length} PAR dashboards`)
 
     // Normalize dashboard data
     const normalizedDashboards = dashboards.map((d: any) => ({

@@ -11,18 +11,10 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    
-    console.log('[API] Session:', session ? 'exists' : 'null')
-    console.log('[API] Session data:', JSON.stringify(session, null, 2))
-    
     const accessToken = (session as any)?.accessToken
     const basicAuth = (session as any)?.basicAuth
-    
-    console.log('[API] accessToken:', accessToken ? 'exists' : 'missing')
-    console.log('[API] basicAuth:', basicAuth ? 'exists' : 'missing')
-    
+
     if (!accessToken && !basicAuth) {
-      console.log('[API] Unauthorized - no token found in session')
       return NextResponse.json({ 
         error: 'Unauthorized', 
         message: 'No access token found. Please sign in again.',
@@ -35,8 +27,6 @@ export async function GET(
     const limit = searchParams.get('limit') || '50'
     const query = searchParams.get('query') || ''
 
-    console.log(`[API] Fetching table: ${table}, limit: ${limit}`)
-
     const servicenowClient = createServiceNowClient(accessToken || basicAuth, !!accessToken)
     
     const data = await servicenowClient.getTableData(table, {
@@ -44,8 +34,6 @@ export async function GET(
       sysparm_query: query,
       sysparm_order: '-sys_created_on', // Newest first so new items appear at top
     })
-
-    console.log(`[API] Fetched ${data.length} records from ${table}`)
 
     return NextResponse.json({ 
       data,

@@ -41,15 +41,11 @@ export async function DELETE(request: NextRequest) {
       headers['Authorization'] = `Basic ${basicAuth}`
     }
 
-    console.log(`[Dashboard API] Deleting dashboard: ${sysId}`)
-
     // Delete dashboard from par_dashboard table
     await axios.delete(
       `${instanceUrl}/api/now/table/par_dashboard/${sysId}`,
       { headers }
     )
-
-    console.log(`[Dashboard API] Dashboard deleted: ${sysId}`)
 
     return NextResponse.json({
       success: true,

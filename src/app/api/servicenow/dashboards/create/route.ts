@@ -42,8 +42,6 @@ export async function POST(request: NextRequest) {
       headers['Authorization'] = `Basic ${basicAuth}`
     }
 
-    console.log(`[Dashboard API] Creating dashboard: ${name}`)
-
     // Create dashboard in par_dashboard table
     const response = await axios.post(
       `${instanceUrl}/api/now/table/par_dashboard`,
@@ -60,8 +58,6 @@ export async function POST(request: NextRequest) {
     if (!newDashboard) {
       return NextResponse.json({ error: 'Failed to create dashboard' }, { status: 500 })
     }
-
-    console.log(`[Dashboard API] Dashboard created: ${newDashboard.sys_id}`)
 
     return NextResponse.json({
       success: true,
